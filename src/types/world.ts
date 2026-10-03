@@ -1,4 +1,4 @@
-export type ZoneId = 'CENTRAL_HUB' | 'AI_LAB' | 'BUILD_BAY' | 'DATA_CORE' | 'HQ';
+export type ZoneId = 'CENTRAL_HUB' | 'AI_LAB' | 'BUILD_BAY' | 'DATA_CORE' | 'HQ' | 'OBSERVATION_DECK' | 'DOCK';
 
 export interface Vector2D {
   x: number;

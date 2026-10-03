@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { ZoneId, InteractableObject } from '../types/world';
 import { ZONES } from '../data/worldMap';
 import { sounds } from '../audio/soundEffects';
-import { 
-  Bot, 
-  Compass, 
-  Volume2, 
-  VolumeX, 
-  Zap, 
-  ChevronRight
+import {
+  Bot,
+  Compass,
+  Volume2,
+  VolumeX,
+  Zap,
+  Maximize2,
+  Minimize2,
+  Palette,
+  X
 } from 'lucide-react';
 
 interface Props {
@@ -20,7 +23,38 @@ interface Props {
   onTeleportToZone: (zoneId: ZoneId) => void;
   isMuted: boolean;
   onToggleSound: () => void;
+  isOverviewMode?: boolean;
+  onToggleOverview?: () => void;
+  crewmateColor?: string;
+  onChangeCrewmateColor?: (color: string) => void;
+  crewmateHat?: string;
+  onChangeCrewmateHat?: (hat: string) => void;
 }
+
+const CREWMATE_COLORS = [
+  { id: 'cyan', name: 'Cyan', hex: '#00D2FF' },
+  { id: 'pink', name: 'Pink', hex: '#EC4899' },
+  { id: 'red', name: 'Red', hex: '#EF4444' },
+  { id: 'blue', name: 'Blue', hex: '#3B82F6' },
+  { id: 'green', name: 'Green', hex: '#10B981' },
+  { id: 'yellow', name: 'Yellow', hex: '#EAB308' },
+  { id: 'orange', name: 'Orange', hex: '#F97316' },
+  { id: 'white', name: 'White', hex: '#F8FAFC' },
+  { id: 'black', name: 'Black', hex: '#334155' },
+  { id: 'ghost', name: 'Ghost', hex: '#A5B4FC' }
+];
+
+const CREWMATE_HATS = [
+  { id: 'none', name: 'No Hat' },
+  { id: 'crown', name: 'Crown' },
+  { id: 'sprout', name: 'Sprout' },
+  { id: 'cap', name: 'Cap' },
+  { id: 'tophat', name: 'Top Hat' },
+  { id: 'headphones', name: 'Headphones' },
+  { id: 'halo', name: 'Halo' },
+  { id: 'bunny', name: 'Bunny Ears' },
+  { id: 'goggles', name: 'Goggles' }
+];
 
 export const WorldHUD: React.FC<Props> = ({
   currentZone,
@@ -30,8 +64,15 @@ export const WorldHUD: React.FC<Props> = ({
   onSwitchToExecutive,
   onTeleportToZone,
   isMuted,
-  onToggleSound
+  onToggleSound,
+  isOverviewMode = false,
+  onToggleOverview,
+  crewmateColor = 'cyan',
+  onChangeCrewmateColor,
+  crewmateHat = 'none',
+  onChangeCrewmateHat
 }) => {
+  const [showWardrobe, setShowWardrobe] = useState(false);
   const currentZoneConfig = ZONES[currentZone] || ZONES.CENTRAL_HUB;
 
   const handleZoneClick = (zoneId: ZoneId) => {
@@ -41,69 +82,93 @@ export const WorldHUD: React.FC<Props> = ({
 
   return (
     <div className="world-hud-overlay pointer-events-none">
-      {/* Top Left: Interactive Tactical Minimap */}
+      {/* Top Left: 6-Sector Space Station Minimap */}
       <div className="hud-minimap-card pointer-events-auto">
         <div className="minimap-header">
           <div className="flex-row items-center gap-1.5">
             <Compass size={13} className="text-cyan animate-spin-slow" />
-            <span className="font-mono text-xs text-white font-bold">SECTOR MINIMAP</span>
+            <span className="font-mono text-xs text-white font-bold">STATION MINIMAP</span>
           </div>
-          <span className="font-mono text-xs text-muted">FAST-TRAVEL</span>
+          <span className="font-mono text-xs text-muted">6 SECTORS</span>
         </div>
 
-        {/* 2D Schematic Quadrant Grid */}
-        <div className="minimap-grid">
-          {/* North: AI LAB */}
-          <button
-            type="button"
-            className={`minimap-zone-node north ${currentZone === 'AI_LAB' ? 'active' : ''}`}
-            onClick={() => handleZoneClick('AI_LAB')}
-            title="Fast-travel to AI LAB"
-          >
-            <span>🧠 AI LAB</span>
-          </button>
-
-          <div className="minimap-middle-row">
-            {/* West: BUILD BAY */}
+        {/* 6-Sector Matrix Grid matching Among Us Space Station Collage */}
+        <div className="minimap-grid-6">
+          {/* Top Row: AI LAB, BUILD BAY, HQ */}
+          <div className="minimap-row">
             <button
               type="button"
-              className={`minimap-zone-node west ${currentZone === 'BUILD_BAY' ? 'active' : ''}`}
+              className={`minimap-zone-node ${currentZone === 'AI_LAB' ? 'active' : ''}`}
+              onClick={() => handleZoneClick('AI_LAB')}
+              title="Fast-travel to AI LAB (Sector 01)"
+              style={{ borderColor: currentZone === 'AI_LAB' ? '#C084FC' : undefined }}
+            >
+              <span>🧠 AI LAB</span>
+            </button>
+
+            <button
+              type="button"
+              className={`minimap-zone-node ${currentZone === 'BUILD_BAY' ? 'active' : ''}`}
               onClick={() => handleZoneClick('BUILD_BAY')}
-              title="Fast-travel to BUILD BAY"
+              title="Fast-travel to BUILD BAY (Sector 02)"
+              style={{ borderColor: currentZone === 'BUILD_BAY' ? '#F472B6' : undefined }}
             >
               <span>💻 BUILD</span>
             </button>
 
-            {/* Center: HUB */}
             <button
               type="button"
-              className={`minimap-zone-node hub ${currentZone === 'CENTRAL_HUB' ? 'active' : ''}`}
-              onClick={() => handleZoneClick('CENTRAL_HUB')}
-              title="Fast-travel to CENTRAL ROTUNDA"
-            >
-              <span>HUB</span>
-            </button>
-
-            {/* East: HQ */}
-            <button
-              type="button"
-              className={`minimap-zone-node east ${currentZone === 'HQ' ? 'active' : ''}`}
+              className={`minimap-zone-node ${currentZone === 'HQ' ? 'active' : ''}`}
               onClick={() => handleZoneClick('HQ')}
-              title="Fast-travel to AAYUSH HQ"
+              title="Fast-travel to AAYUSH HQ (Sector 03)"
+              style={{ borderColor: currentZone === 'HQ' ? '#F59E0B' : undefined }}
             >
               <span>⚡ HQ</span>
             </button>
           </div>
 
-          {/* South: DATA CORE */}
+          {/* Central Concourse Connector */}
           <button
             type="button"
-            className={`minimap-zone-node south ${currentZone === 'DATA_CORE' ? 'active' : ''}`}
-            onClick={() => handleZoneClick('DATA_CORE')}
-            title="Fast-travel to DATA CORE"
+            className={`minimap-zone-node hub-wide ${currentZone === 'CENTRAL_HUB' ? 'active' : ''}`}
+            onClick={() => handleZoneClick('CENTRAL_HUB')}
+            title="Fast-travel to Central Concourse"
           >
-            <span>📊 DATA</span>
+            <span>🛰️ TRANSIT CONCOURSE // HUB</span>
           </button>
+
+          {/* Bottom Row: DATA CORE, OBSERVATION DECK, DOCK */}
+          <div className="minimap-row">
+            <button
+              type="button"
+              className={`minimap-zone-node ${currentZone === 'DATA_CORE' ? 'active' : ''}`}
+              onClick={() => handleZoneClick('DATA_CORE')}
+              title="Fast-travel to DATA CORE (Sector 04)"
+              style={{ borderColor: currentZone === 'DATA_CORE' ? '#10B981' : undefined }}
+            >
+              <span>📊 DATA</span>
+            </button>
+
+            <button
+              type="button"
+              className={`minimap-zone-node ${currentZone === 'OBSERVATION_DECK' ? 'active' : ''}`}
+              onClick={() => handleZoneClick('OBSERVATION_DECK')}
+              title="Fast-travel to OBSERVATION DECK (Sector 05)"
+              style={{ borderColor: currentZone === 'OBSERVATION_DECK' ? '#38BDF8' : undefined }}
+            >
+              <span>🌌 OBSERV</span>
+            </button>
+
+            <button
+              type="button"
+              className={`minimap-zone-node ${currentZone === 'DOCK' ? 'active' : ''}`}
+              onClick={() => handleZoneClick('DOCK')}
+              title="Fast-travel to DOCK (Sector 06)"
+              style={{ borderColor: currentZone === 'DOCK' ? '#F97316' : undefined }}
+            >
+              <span>🚀 DOCK</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -111,7 +176,7 @@ export const WorldHUD: React.FC<Props> = ({
       <div className="hud-zone-banner">
         <div className="banner-inner">
           <div className="flex-row items-center justify-center gap-2">
-            <div className="status-dot-pulse online" />
+            <div className="status-dot-pulse online" style={{ backgroundColor: currentZoneConfig.themeColor }} />
             <span className="font-mono font-bold text-sm tracking-wider" style={{ color: currentZoneConfig.themeColor }}>
               {currentZoneConfig.title}
             </span>
@@ -124,6 +189,37 @@ export const WorldHUD: React.FC<Props> = ({
 
       {/* Top Right: System Quick Controls */}
       <div className="hud-top-right-group pointer-events-auto">
+        {/* Full Station Collage View Toggle */}
+        {onToggleOverview && (
+          <button
+            type="button"
+            className={`hud-action-btn ${isOverviewMode ? 'active' : ''}`}
+            onClick={() => {
+              sounds.playClick();
+              onToggleOverview();
+            }}
+            title={isOverviewMode ? "Return to Crewmate walk mode" : "View Full Space Station Collage (M)"}
+          >
+            {isOverviewMode ? <Minimize2 size={14} className="text-cyan" /> : <Maximize2 size={14} className="text-cyan" />}
+            <span className="font-mono text-xs">{isOverviewMode ? 'CLOSE OVERVIEW' : 'STATION VIEW'}</span>
+          </button>
+        )}
+
+        {/* Crewmate Wardrobe / Customizer */}
+        <button
+          type="button"
+          className="hud-action-btn"
+          onClick={() => {
+            sounds.playClick();
+            setShowWardrobe(prev => !prev);
+          }}
+          title="Customize Crewmate color & hat"
+        >
+          <Palette size={14} className="text-pink-400" />
+          <span className="font-mono text-xs">CREWMATE</span>
+        </button>
+
+        {/* Companion Drone */}
         <button
           type="button"
           className="hud-action-btn companion-btn"
@@ -137,6 +233,7 @@ export const WorldHUD: React.FC<Props> = ({
           <span className="font-mono text-xs">WORKSHOP AI</span>
         </button>
 
+        {/* Executive View */}
         <button
           type="button"
           className="hud-action-btn exec-toggle-btn"
@@ -150,43 +247,104 @@ export const WorldHUD: React.FC<Props> = ({
           <span className="font-mono text-xs">EXECUTIVE VIEW</span>
         </button>
 
+        {/* Sound toggle */}
         <button
           type="button"
           className="hud-action-btn icon-only"
           onClick={onToggleSound}
-          title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+          title={isMuted ? "Unmute audio" : "Mute audio"}
         >
           {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
         </button>
       </div>
 
-      {/* Bottom Center: Proximity Interact Prompt */}
+      {/* Crewmate Wardrobe Customizer Drawer */}
+      {showWardrobe && (
+        <div className="wardrobe-drawer pointer-events-auto">
+          <div className="wardrobe-header">
+            <div className="flex-row items-center gap-2">
+              <Palette size={16} className="text-pink-400" />
+              <span className="font-bold text-sm text-white">CREWMATE WARDROBE</span>
+            </div>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setShowWardrobe(false)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Color Selector */}
+          <div className="wardrobe-section">
+            <span className="text-xs font-mono text-muted mb-2 block">SUIT COLOR:</span>
+            <div className="color-swatches-grid">
+              {CREWMATE_COLORS.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`color-swatch-btn ${crewmateColor === c.id ? 'active' : ''}`}
+                  onClick={() => {
+                    sounds.playClick();
+                    if (onChangeCrewmateColor) onChangeCrewmateColor(c.id);
+                  }}
+                  title={c.name}
+                  style={{ backgroundColor: c.hex }}
+                >
+                  {crewmateColor === c.id && <span className="swatch-check">✓</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Hat Selector */}
+          <div className="wardrobe-section mt-3">
+            <span className="text-xs font-mono text-muted mb-2 block">HEADWEAR / ACCESSORY:</span>
+            <div className="hat-chips-grid">
+              {CREWMATE_HATS.map(h => (
+                <button
+                  key={h.id}
+                  type="button"
+                  className={`hat-chip-btn ${crewmateHat === h.id ? 'active' : ''}`}
+                  onClick={() => {
+                    sounds.playClick();
+                    if (onChangeCrewmateHat) onChangeCrewmateHat(h.id);
+                  }}
+                >
+                  {h.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Center: Proximity Action Prompt */}
       {nearestObj && (
-        <div className="hud-interact-prompt pointer-events-auto animate-fade-in">
+        <div className="hud-bottom-interact pointer-events-auto">
           <button
             type="button"
-            className="interact-key-pill"
+            className="interact-action-card"
             onClick={onInteract}
           >
-            <span className="key-cap font-mono">E</span>
-            <div className="interact-labels">
-              <span className="interact-action font-mono">INTERACT WITH TERMINAL</span>
-              <span className="interact-target font-mono text-white">{nearestObj.name}</span>
+            <div className="interact-key-badge">
+              <span>E</span>
             </div>
-            <ChevronRight size={16} className="interact-arrow" />
+            <div className="interact-info">
+              <span className="interact-title">{nearestObj.name}</span>
+              <span className="interact-sub">{nearestObj.subTitle}</span>
+            </div>
           </button>
         </div>
       )}
 
-      {/* Bottom Left: Desktop Controls Guide */}
-      <div className="hud-controls-helper font-mono text-xs text-muted">
-        <span>WASD / ARROWS: Move</span>
-        <span>•</span>
-        <span>CLICK FLOOR: Walk</span>
-        <span>•</span>
-        <span>E: Interact</span>
-        <span>•</span>
-        <span>SPACE: Workshop AI</span>
+      {/* Bottom Left: Navigation Keys Legend */}
+      <div className="hud-bottom-left-legend pointer-events-auto">
+        <span className="legend-chip">WASD / ARROWS: Move</span>
+        <span className="legend-chip">CLICK: Walk To</span>
+        <span className="legend-chip">E: Interact</span>
+        <span className="legend-chip">SPACE: AI Drone</span>
+        <span className="legend-chip">M: Station View</span>
       </div>
     </div>
   );

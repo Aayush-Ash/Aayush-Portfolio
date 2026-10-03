@@ -10,6 +10,120 @@ interface Props {
   onZoneChange: (zone: ZoneId) => void;
   teleportTarget: Vector2D | null;
   onTeleportComplete: () => void;
+  isOverviewMode?: boolean;
+  onToggleOverview?: () => void;
+  crewmateColor?: string;
+  crewmateHat?: string;
+}
+
+// Room visual specifications
+interface RoomVisualConfig {
+  id: ZoneId;
+  title: string;
+  nameShort: string;
+  imageSrc: string;
+  centerX: number;
+  centerY: number;
+  width: number;
+  height: number;
+  themeColor: string;
+  glowColor: string;
+}
+
+const ROOM_CONFIGS: Record<string, RoomVisualConfig> = {
+  AI_LAB: {
+    id: 'AI_LAB',
+    title: 'AI LAB',
+    nameShort: 'SECTOR 01',
+    imageSrc: '/among_us_map/rooms/room_ai_lab.png',
+    centerX: -820,
+    centerY: -420,
+    width: 680,
+    height: 575,
+    themeColor: '#C084FC',
+    glowColor: 'rgba(192, 132, 252, 0.35)'
+  },
+  BUILD_BAY: {
+    id: 'BUILD_BAY',
+    title: 'BUILD BAY',
+    nameShort: 'SECTOR 02',
+    imageSrc: '/among_us_map/rooms/room_build_bay.png',
+    centerX: 0,
+    centerY: -420,
+    width: 680,
+    height: 575,
+    themeColor: '#F472B6',
+    glowColor: 'rgba(244, 114, 182, 0.35)'
+  },
+  HQ: {
+    id: 'HQ',
+    title: 'AAYUSH HQ',
+    nameShort: 'SECTOR 03',
+    imageSrc: '/among_us_map/rooms/room_hq.png',
+    centerX: 820,
+    centerY: -420,
+    width: 680,
+    height: 575,
+    themeColor: '#F59E0B',
+    glowColor: 'rgba(245, 158, 11, 0.35)'
+  },
+  DATA_CORE: {
+    id: 'DATA_CORE',
+    title: 'DATA CORE',
+    nameShort: 'SECTOR 04',
+    imageSrc: '/among_us_map/rooms/room_data_core.png',
+    centerX: -820,
+    centerY: 420,
+    width: 680,
+    height: 575,
+    themeColor: '#10B981',
+    glowColor: 'rgba(16, 185, 129, 0.35)'
+  },
+  OBSERVATION_DECK: {
+    id: 'OBSERVATION_DECK',
+    title: 'OBSERVATION DECK',
+    nameShort: 'SECTOR 05',
+    imageSrc: '/among_us_map/rooms/room_observation.png',
+    centerX: 0,
+    centerY: 420,
+    width: 680,
+    height: 575,
+    themeColor: '#38BDF8',
+    glowColor: 'rgba(56, 189, 248, 0.35)'
+  },
+  DOCK: {
+    id: 'DOCK',
+    title: 'DOCK',
+    nameShort: 'SECTOR 06',
+    imageSrc: '/among_us_map/rooms/room_dock.png',
+    centerX: 820,
+    centerY: 420,
+    width: 680,
+    height: 575,
+    themeColor: '#F97316',
+    glowColor: 'rgba(249, 115, 22, 0.35)'
+  }
+};
+
+// Sakura petal particle
+interface SakuraPetal {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  rotation: number;
+  vRot: number;
+  alpha: number;
+}
+
+// Star particle for space parallax
+interface SpaceStar {
+  x: number;
+  y: number;
+  size: number;
+  alpha: number;
+  speed: number;
 }
 
 export const WorkshopWorld: React.FC<Props> = ({
@@ -18,7 +132,11 @@ export const WorkshopWorld: React.FC<Props> = ({
   currentZone,
   onZoneChange,
   teleportTarget,
-  onTeleportComplete
+  onTeleportComplete,
+  isOverviewMode = false,
+  onToggleOverview,
+  crewmateColor = 'cyan',
+  crewmateHat = 'none'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -28,17 +146,25 @@ export const WorkshopWorld: React.FC<Props> = ({
     y: 0,
     vx: 0,
     vy: 0,
-    speed: 3.8,
-    facing: 'down' as 'down' | 'up' | 'left' | 'right',
+    speed: 4.2,
+    facing: 'right' as 'left' | 'right',
     isMoving: false,
     animTick: 0
   });
 
-  // Companion drone position (smooth trailing behind player)
+  // Companion drone position (trailing behind crewmate)
   const droneRef = useRef({
-    x: -30,
-    y: -30,
+    x: -35,
+    y: -35,
     hoverOffset: 0
+  });
+
+  // Smooth camera position
+  const cameraRef = useRef({
+    x: 0,
+    y: 0,
+    zoom: 1,
+    targetZoom: 1
   });
 
   // Target destination when player clicks/taps on floor
@@ -54,6 +180,121 @@ export const WorkshopWorld: React.FC<Props> = ({
   // Footstep audio throttle
   const lastFootstepRef = useRef(0);
 
+  // Asset image cache
+  const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+  // Sakura petals particle system
+  const sakuraPetalsRef = useRef<SakuraPetal[]>([]);
+
+  // Parallax stars
+  const spaceStarsRef = useRef<SpaceStar[]>([]);
+
+  // Initialize particles
+  useEffect(() => {
+    // Generate 35 sakura petals in Build Bay
+    const petals: SakuraPetal[] = [];
+    for (let i = 0; i < 35; i++) {
+      petals.push({
+        x: -250 + Math.random() * 500,
+        y: -650 + Math.random() * 450,
+        vx: 0.3 + Math.random() * 0.7,
+        vy: 0.6 + Math.random() * 1.0,
+        size: 3 + Math.random() * 4,
+        rotation: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 0.05,
+        alpha: 0.4 + Math.random() * 0.5
+      });
+    }
+    sakuraPetalsRef.current = petals;
+
+    // Generate space stars
+    const stars: SpaceStar[] = [];
+    for (let i = 0; i < 180; i++) {
+      stars.push({
+        x: (Math.random() - 0.5) * 3200,
+        y: (Math.random() - 0.5) * 2400,
+        size: Math.random() < 0.2 ? 2.2 : Math.random() < 0.6 ? 1.5 : 0.9,
+        alpha: 0.2 + Math.random() * 0.7,
+        speed: 0.2 + Math.random() * 0.8
+      });
+    }
+    spaceStarsRef.current = stars;
+  }, []);
+
+  // Preload all space station images, crewmates, hats, and icons
+  useEffect(() => {
+    const assetUrls = [
+      // 6 Rooms
+      '/among_us_map/rooms/room_ai_lab.png',
+      '/among_us_map/rooms/room_build_bay.png',
+      '/among_us_map/rooms/room_hq.png',
+      '/among_us_map/rooms/room_data_core.png',
+      '/among_us_map/rooms/room_observation.png',
+      '/among_us_map/rooms/room_dock.png',
+      // Master Collage
+      '/among_us_map/Neon%20Among%20Us%20Space%20Station%20Collage.png',
+      // Crewmates
+      '/among_us_map/sprites/crewmate_cyan.png',
+      '/among_us_map/sprites/crewmate_red.png',
+      '/among_us_map/sprites/crewmate_pink.png',
+      '/among_us_map/sprites/crewmate_blue.png',
+      '/among_us_map/sprites/crewmate_green.png',
+      '/among_us_map/sprites/crewmate_yellow.png',
+      '/among_us_map/sprites/crewmate_orange.png',
+      '/among_us_map/sprites/crewmate_white.png',
+      '/among_us_map/sprites/crewmate_black.png',
+      '/among_us_map/sprites/crewmate_ghost.png',
+      // Hats
+      '/among_us_map/hats/hat_crown.png',
+      '/among_us_map/hats/hat_sprout.png',
+      '/among_us_map/hats/hat_cap.png',
+      '/among_us_map/hats/hat_tophat.png',
+      '/among_us_map/hats/hat_headphones.png',
+      '/among_us_map/hats/hat_halo.png',
+      '/among_us_map/hats/hat_bunny.png',
+      '/among_us_map/hats/hat_goggles.png',
+      // Icons
+      '/among_us_map/icons/icon_brain.png',
+      '/among_us_map/icons/icon_code.png',
+      '/among_us_map/icons/icon_database.png',
+      '/among_us_map/icons/icon_analytics.png',
+      '/among_us_map/icons/icon_telescope.png',
+      '/among_us_map/icons/icon_wrench.png',
+      '/among_us_map/icons/icon_coffee.png',
+      '/among_us_map/icons/icon_hq.png',
+      // Props & tiles
+      '/among_us_map/props/prop_holo_brain.png',
+      '/among_us_map/props/prop_sakura_tree.png',
+      '/among_us_map/props/prop_planet_earth.png',
+      '/among_us_map/tiles/tile_floor.png',
+      '/among_us_map/tiles/tile_conduit_cyan.png',
+      '/among_us_map/tiles/tile_conduit_orange.png'
+    ];
+
+    let loadedCount = 0;
+    const totalCount = assetUrls.length;
+
+    assetUrls.forEach(url => {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => {
+        imagesRef.current.set(url, img);
+        loadedCount++;
+        if (loadedCount >= totalCount) {
+          setAssetsLoaded(true);
+        }
+      };
+      img.onerror = () => {
+        // Fallback progress so app continues even if a single optional sprite fails
+        loadedCount++;
+        if (loadedCount >= totalCount) {
+          setAssetsLoaded(true);
+        }
+      };
+    });
+  }, []);
+
   // Teleport handler
   useEffect(() => {
     if (teleportTarget) {
@@ -62,8 +303,10 @@ export const WorkshopWorld: React.FC<Props> = ({
       playerRef.current.vx = 0;
       playerRef.current.vy = 0;
       targetDestRef.current = null;
-      droneRef.current.x = teleportTarget.x - 30;
-      droneRef.current.y = teleportTarget.y - 30;
+      droneRef.current.x = teleportTarget.x - 35;
+      droneRef.current.y = teleportTarget.y - 35;
+      cameraRef.current.x = teleportTarget.x;
+      cameraRef.current.y = teleportTarget.y;
       sounds.playZoneTransition();
       onTeleportComplete();
     }
@@ -81,7 +324,6 @@ export const WorkshopWorld: React.FC<Props> = ({
   // Setup keyboard event listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't capture when typing in inputs/textareas
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         return;
       }
@@ -98,6 +340,14 @@ export const WorkshopWorld: React.FC<Props> = ({
         sounds.playClick();
         onOpenCompanion();
       }
+
+      if (e.key === 'm' || e.key === 'M') {
+        if (onToggleOverview) {
+          e.preventDefault();
+          sounds.playClick();
+          onToggleOverview();
+        }
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -110,9 +360,9 @@ export const WorkshopWorld: React.FC<Props> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [triggerInteraction, onOpenCompanion]);
+  }, [triggerInteraction, onOpenCompanion, onToggleOverview]);
 
-  // Canvas render & physics loop
+  // Canvas render & animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -140,6 +390,7 @@ export const WorkshopWorld: React.FC<Props> = ({
       const keys = keysRef.current;
       const width = window.innerWidth;
       const height = window.innerHeight;
+      const images = imagesRef.current;
 
       // 1. Process movement inputs
       let dx = 0;
@@ -170,20 +421,18 @@ export const WorkshopWorld: React.FC<Props> = ({
 
       // Normalize diagonal velocity
       const mag = Math.hypot(dx, dy);
-      if (mag > 0) {
+      if (mag > 0 && !isOverviewMode) {
         player.vx = (dx / mag) * player.speed;
         player.vy = (dy / mag) * player.speed;
         player.isMoving = true;
-        player.animTick += dt * 9;
+        player.animTick += dt * 10;
 
-        if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx !== 0) {
           player.facing = dx > 0 ? 'right' : 'left';
-        } else {
-          player.facing = dy > 0 ? 'down' : 'up';
         }
 
         // Footstep sounds
-        if (time - lastFootstepRef.current > 320) {
+        if (time - lastFootstepRef.current > 290) {
           sounds.playFootstep();
           lastFootstepRef.current = time;
         }
@@ -193,24 +442,62 @@ export const WorkshopWorld: React.FC<Props> = ({
         player.isMoving = false;
       }
 
-      // World boundaries collision clamping
-      player.x = Math.max(-650, Math.min(650, player.x + player.vx));
-      player.y = Math.max(-610, Math.min(610, player.y + player.vy));
+      // 2. Space Station Walkable Clamping
+      // Allow walking inside the 6 rooms AND the central transit hallway & vertical airlocks
+      const nextX = player.x + player.vx;
+      const nextY = player.y + player.vy;
+
+      // Check if position is inside any room
+      let inAnyRoom = false;
+      Object.values(ROOM_CONFIGS).forEach(r => {
+        const halfW = r.width * 0.44;
+        const halfH = r.height * 0.44;
+        if (Math.abs(nextX - r.centerX) < halfW && Math.abs(nextY - r.centerY) < halfH) {
+          inAnyRoom = true;
+        }
+      });
+
+      // Check if inside central transit concourse
+      const inConcourse = Math.abs(nextX) < 1120 && Math.abs(nextY) < 110;
+
+      // Check if inside vertical connecting airlocks (corridors between rooms and concourse)
+      const inNorthAirlock = (Math.abs(nextX - (-820)) < 70 || Math.abs(nextX) < 70 || Math.abs(nextX - 820) < 70) && (nextY >= -450 && nextY <= 0);
+      const inSouthAirlock = (Math.abs(nextX - (-820)) < 70 || Math.abs(nextX) < 70 || Math.abs(nextX - 820) < 70) && (nextY >= 0 && nextY <= 450);
+
+      // Check if inside side airlocks (between top rooms or between bottom rooms)
+      const inTopSideAirlock = (Math.abs(nextY - (-420)) < 60) && (Math.abs(nextX) < 1120);
+      const inBottomSideAirlock = (Math.abs(nextY - 420) < 60) && (Math.abs(nextX) < 1120);
+
+      if (inAnyRoom || inConcourse || inNorthAirlock || inSouthAirlock || inTopSideAirlock || inBottomSideAirlock) {
+        player.x = nextX;
+        player.y = nextY;
+      } else {
+        // Soft fallback clamp within station envelope
+        player.x = Math.max(-1120, Math.min(1120, nextX));
+        player.y = Math.max(-680, Math.min(680, nextY));
+      }
 
       // Drone follower lag
       const drone = droneRef.current;
-      const targetDroneX = player.x + (player.facing === 'left' ? 36 : -36);
-      const targetDroneY = player.y - 38 + Math.sin(time * 0.004) * 6;
-      drone.x += (targetDroneX - drone.x) * 0.08;
-      drone.y += (targetDroneY - drone.y) * 0.08;
-      drone.hoverOffset = Math.sin(time * 0.005) * 4;
+      const targetDroneX = player.x + (player.facing === 'left' ? 42 : -42);
+      const targetDroneY = player.y - 36 + Math.sin(time * 0.005) * 5;
+      drone.x += (targetDroneX - drone.x) * 0.09;
+      drone.y += (targetDroneY - drone.y) * 0.09;
+      drone.hoverOffset = Math.sin(time * 0.006) * 4;
 
-      // Check current zone
+      // Detect current zone
       let detectedZone: ZoneId = 'CENTRAL_HUB';
-      if (player.y < -220) detectedZone = 'AI_LAB';
-      else if (player.x < -220) detectedZone = 'BUILD_BAY';
-      else if (player.y > 220) detectedZone = 'DATA_CORE';
-      else if (player.x > 220) detectedZone = 'HQ';
+      if (player.y < -120) {
+        if (player.x < -410) detectedZone = 'AI_LAB';
+        else if (player.x > 410) detectedZone = 'HQ';
+        else detectedZone = 'BUILD_BAY';
+      } else if (player.y > 120) {
+        if (player.x < -410) detectedZone = 'DATA_CORE';
+        else if (player.x > 410) detectedZone = 'DOCK';
+        else detectedZone = 'OBSERVATION_DECK';
+      } else {
+        detectedZone = 'CENTRAL_HUB';
+      }
 
       if (detectedZone !== currentZone) {
         onZoneChange(detectedZone);
@@ -229,274 +516,331 @@ export const WorkshopWorld: React.FC<Props> = ({
       }
 
       if (closest !== nearestObjRef.current) {
+        if (closest && !nearestObjRef.current) {
+          sounds.playInteract();
+        }
         nearestObjRef.current = closest;
         setNearestObj(closest);
       }
 
-      // 2. Camera tracking
-      // Isometric 2.5D viewport offset
-      const camX = width / 2 - player.x;
-      const camY = height / 2 - player.y;
+      // Smooth camera interpolation
+      const targetCamX = isOverviewMode ? 0 : player.x;
+      const targetCamY = isOverviewMode ? 0 : player.y;
+      const targetCamZoom = isOverviewMode ? Math.min(width / 2450, height / 1550) : 1;
 
-      // 3. Clear Screen with deep slate base
-      ctx.fillStyle = '#080A0F';
+      cameraRef.current.x += (targetCamX - cameraRef.current.x) * 0.08;
+      cameraRef.current.y += (targetCamY - cameraRef.current.y) * 0.08;
+      cameraRef.current.zoom += (targetCamZoom - cameraRef.current.zoom) * 0.08;
+
+      const camX = width / 2 - cameraRef.current.x * cameraRef.current.zoom;
+      const camY = height / 2 - cameraRef.current.y * cameraRef.current.zoom;
+      const zoom = cameraRef.current.zoom;
+
+      // 3. Clear Screen with deep cosmic slate base
+      ctx.fillStyle = '#06080E';
       ctx.fillRect(0, 0, width, height);
 
+      // --- DRAW PARALLAX STARFIELD & NEBULA ---
+      ctx.save();
+      spaceStarsRef.current.forEach(star => {
+        const starScreenX = ((star.x - cameraRef.current.x * 0.15) % width + width) % width;
+        const starScreenY = ((star.y - cameraRef.current.y * 0.15) % height + height) % height;
+        const twinkle = 0.5 + Math.sin(time * 0.003 * star.speed + star.x) * 0.45;
+        ctx.fillStyle = `rgba(220, 235, 255, ${star.alpha * twinkle})`;
+        ctx.beginPath();
+        ctx.arc(starScreenX, starScreenY, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+
+      // --- WORLD CAMERA TRANSFORM ---
       ctx.save();
       ctx.translate(camX, camY);
+      ctx.scale(zoom, zoom);
 
-      // --- DRAW 2.5D WORLD ENVIRONMENT ---
-
-      // A. Floor grid plates
-      const tileSize = 60;
-      const startX = -720;
-      const endX = 720;
-      const startY = -680;
-      const endY = 680;
-
-      ctx.strokeStyle = '#121824';
-      ctx.lineWidth = 1;
-
-      for (let x = startX; x <= endX; x += tileSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, startY);
-        ctx.lineTo(x, endY);
-        ctx.stroke();
-      }
-      for (let y = startY; y <= endY; y += tileSize) {
-        ctx.beginPath();
-        ctx.moveTo(startX, y);
-        ctx.lineTo(endX, y);
-        ctx.stroke();
-      }
-
-      // B. Zone floor outlines & metallic platforms
-      Object.values(ZONES).forEach(zone => {
-        const b = zone.bounds;
-        const isCurrent = detectedZone === zone.id;
-
-        // Platform base
-        ctx.fillStyle = isCurrent ? '#0E131C' : '#0B0F17';
-        ctx.fillRect(b.minX, b.minY, b.maxX - b.minX, b.maxY - b.minY);
-
-        // Border conduit
-        ctx.strokeStyle = isCurrent ? zone.themeColor : '#1C2433';
-        ctx.lineWidth = isCurrent ? 2 : 1;
-        ctx.strokeRect(b.minX, b.minY, b.maxX - b.minX, b.maxY - b.minY);
-
-        // Zone header label on floor
-        ctx.fillStyle = isCurrent ? zone.themeColor : '#334155';
-        ctx.font = 'bold 12px "Space Grotesk", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(zone.title, zone.center.x, b.minY + 24);
+      // --- A. DRAW TRANSIT CONCOURSE & CONNECTING AIRLOCK CORRIDORS ---
+      // Floor corridor base
+      ctx.fillStyle = '#0B0F17';
+      // Main horizontal hallway
+      ctx.fillRect(-1150, -85, 2300, 170);
+      // Vertical connecting halls
+      [-820, 0, 820].forEach(cx => {
+        ctx.fillRect(cx - 75, -450, 150, 900);
       });
+      // Side connecting halls
+      ctx.fillRect(-1150, -455, 2300, 70);
+      ctx.fillRect(-1150, 385, 2300, 70);
 
-      // C. Glowing Conduits (connecting corridors from Hub)
+      // Outer corridor borders
+      ctx.strokeStyle = '#1E293B';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-1150, -85, 2300, 170);
+
+      // Glowing Neon Floor Conduits (connecting all sectors to Central Hub)
       const conduitPulse = (Math.sin(time * 0.005) + 1) * 0.5;
 
-      const drawConduit = (x1: number, y1: number, x2: number, y2: number, color: string) => {
-        // Outer glow
+      const drawLaserConduit = (x1: number, y1: number, x2: number, y2: number, color: string) => {
+        ctx.save();
         ctx.strokeStyle = color;
-        ctx.globalAlpha = 0.2 + conduitPulse * 0.3;
-        ctx.lineWidth = 6;
+        ctx.globalAlpha = 0.25 + conduitPulse * 0.35;
+        ctx.lineWidth = 7;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
 
-        // Inner laser core
         ctx.strokeStyle = '#FFFFFF';
-        ctx.globalAlpha = 0.8;
-        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = 0.9;
+        ctx.lineWidth = 1.8;
         ctx.stroke();
-        ctx.globalAlpha = 1;
+        ctx.restore();
       };
 
-      // North to AI LAB
-      drawConduit(0, -60, 0, -320, '#00D2FF');
-      // West to BUILD BAY
-      drawConduit(-60, 0, -320, 0, '#38BDF8');
-      // South to DATA CORE
-      drawConduit(0, 60, 0, 320, '#10B981');
-      // East to HQ
-      drawConduit(60, 0, 320, 0, '#F59E0B');
+      // Conduits from Central Hub (0,0) to all sectors
+      drawLaserConduit(-820, 0, -820, -180, '#C084FC'); // To AI LAB
+      drawLaserConduit(0, 0, 0, -180, '#F472B6');       // To BUILD BAY
+      drawLaserConduit(820, 0, 820, -180, '#F59E0B');   // To HQ
+      drawLaserConduit(-820, 0, -820, 180, '#10B981');  // To DATA CORE
+      drawLaserConduit(0, 0, 0, 180, '#38BDF8');        // To OBSERVATION DECK
+      drawLaserConduit(820, 0, 820, 180, '#F97316');    // To DOCK
+      // Horizontal bus
+      drawLaserConduit(-820, 0, 820, 0, '#00D2FF');
 
-      // D. Central Hub Floor Medallion & Compass
+      // Central Concourse Floor Medallion & Compass
       ctx.beginPath();
-      ctx.arc(0, 0, 80, 0, Math.PI * 2);
+      ctx.arc(0, 0, 70, 0, Math.PI * 2);
       ctx.fillStyle = '#0F1522';
       ctx.fill();
       ctx.strokeStyle = '#00D2FF';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.arc(0, 0, 45, 0, Math.PI * 2);
+      ctx.arc(0, 0, 42, 0, Math.PI * 2);
       ctx.strokeStyle = '#1E293B';
       ctx.stroke();
 
-      // Floor Wayfinding markings
-      ctx.fillStyle = '#64748B';
-      ctx.font = '10px "JetBrains Mono", monospace';
+      // Wayfinding markings on floor
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('▲ AI LAB (SECTOR 01)', 0, -95);
-      ctx.fillText('◄ BUILD BAY (SECTOR 02)', -140, 4);
-      ctx.fillText('▼ DATA CORE (SECTOR 03)', 0, 105);
-      ctx.fillText('HQ (SECTOR 04) ►', 140, 4);
+      ctx.fillText('▲ SECTOR 02 // BUILD BAY', 0, -95);
+      ctx.fillText('▼ SECTOR 05 // OBSERVATION DECK', 0, 105);
+      ctx.fillText('◄ SECTORS 01 & 04 (AI LAB / DATA CORE)', -360, 4);
+      ctx.fillText('SECTORS 03 & 06 (HQ / DOCK) ►', 360, 4);
 
-      // E. Draw Special Machinery & Architectural Centers
-      // AI LAB: Central Holographic Core
-      const holoRotation = time * 0.0015;
+      // --- B. DRAW THE 6 AMONG US ROOMS ---
+      Object.values(ROOM_CONFIGS).forEach(r => {
+        const isCurrent = detectedZone === r.id;
+        const roomImg = images.get(r.imageSrc);
+
+        const x = r.centerX - r.width / 2;
+        const y = r.centerY - r.height / 2;
+
+        // Ambient room glow shadow
+        ctx.save();
+        ctx.shadowColor = r.themeColor;
+        ctx.shadowBlur = isCurrent ? 35 : 15;
+
+        // Draw Room Artwork (from the authentic Among Us collage extract!)
+        if (roomImg && roomImg.complete && roomImg.naturalWidth > 0) {
+          ctx.drawImage(roomImg, x, y, r.width, r.height);
+        } else {
+          // Graceful fallback while images finish loading
+          ctx.fillStyle = isCurrent ? '#111726' : '#0B0F17';
+          ctx.fillRect(x, y, r.width, r.height);
+          ctx.strokeStyle = r.themeColor;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, r.width, r.height);
+        }
+        ctx.restore();
+
+        // Neon border highlight around current room
+        ctx.save();
+        ctx.strokeStyle = isCurrent ? r.themeColor : 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = isCurrent ? 2.5 : 1;
+        ctx.strokeRect(x, y, r.width, r.height);
+
+        // Neon Room Header Tag
+        const badgeWidth = 140;
+        const badgeHeight = 26;
+        ctx.fillStyle = 'rgba(8, 12, 20, 0.9)';
+        ctx.fillRect(r.centerX - badgeWidth / 2, y - 14, badgeWidth, badgeHeight);
+        ctx.strokeStyle = r.themeColor;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(r.centerX - badgeWidth / 2, y - 14, badgeWidth, badgeHeight);
+
+        ctx.fillStyle = isCurrent ? '#FFFFFF' : r.themeColor;
+        ctx.font = 'bold 10px "Space Grotesk", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`— ${r.title} —`, r.centerX, y + 3);
+        ctx.restore();
+      });
+
+      // --- C. DYNAMIC ROOM VISUAL FX ---
+
+      // 1. AI LAB: Glowing Brain Holographic Ring & Digital Sparkles
       ctx.save();
-      ctx.translate(0, -420);
-      
-      // Outer rotating ring
-      ctx.strokeStyle = '#00D2FF';
+      const brainX = -820;
+      const brainY = -450;
+      const brainRot = time * 0.0018;
+
+      // Rotating holographic rings around brain pedestal
+      ctx.strokeStyle = '#C084FC';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(0, 0, 45, holoRotation, holoRotation + Math.PI * 1.5);
+      ctx.ellipse(brainX, brainY, 52, 22, brainRot, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Inner counter-rotating ring
       ctx.strokeStyle = '#38BDF8';
       ctx.beginPath();
-      ctx.arc(0, 0, 30, -holoRotation * 1.5, -holoRotation * 1.5 + Math.PI);
+      ctx.ellipse(brainX, brainY, 38, 16, -brainRot * 1.4, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Pulsing Holographic Core Sphere
-      const pulseSize = 12 + Math.sin(time * 0.008) * 3;
-      const coreGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, pulseSize);
-      coreGrad.addColorStop(0, '#FFFFFF');
-      coreGrad.addColorStop(0.5, '#00D2FF');
-      coreGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = coreGrad;
+      // Brain pulse core glow
+      const brainPulse = 18 + Math.sin(time * 0.007) * 4;
+      const brainGrad = ctx.createRadialGradient(brainX, brainY - 10, 2, brainX, brainY - 10, brainPulse);
+      brainGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+      brainGrad.addColorStop(0.5, 'rgba(192, 132, 252, 0.6)');
+      brainGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = brainGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, pulseSize, 0, Math.PI * 2);
+      ctx.arc(brainX, brainY - 10, brainPulse, 0, Math.PI * 2);
       ctx.fill();
-
-      // Holographic text banner
-      ctx.fillStyle = '#E2E8F0';
-      ctx.font = 'bold 9px "JetBrains Mono", monospace';
-      ctx.fillText('AGENT CORE // PLAN-ACT', 0, 52);
       ctx.restore();
 
-      // BUILD BAY: Giant mechanical keyboard outline
+      // 2. BUILD BAY: Falling Sakura Blossom Petals
       ctx.save();
-      ctx.translate(-440, -100);
-      ctx.fillStyle = '#1A1D26';
-      ctx.fillRect(-45, -20, 90, 40);
-      ctx.strokeStyle = '#F472B6';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-45, -20, 90, 40);
-      // Keycaps rows
-      ctx.fillStyle = '#2B313F';
-      for (let r = 0; r < 3; r++) {
-        for (let c = 0; c < 5; c++) {
-          ctx.fillRect(-38 + c * 16, -14 + r * 11, 12, 8);
+      sakuraPetalsRef.current.forEach(p => {
+        p.x += p.vx + Math.sin(time * 0.003 + p.y * 0.02) * 0.4;
+        p.y += p.vy;
+        p.rotation += p.vRot;
+
+        // Wrap within Build Bay room boundaries
+        if (p.y > -160) {
+          p.y = -640;
+          p.x = -240 + Math.random() * 480;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle = `rgba(244, 114, 182, ${p.alpha})`;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.size, p.size * 0.55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+      ctx.restore();
+
+      // 3. DATA CORE: Blinking Server LEDs & Fluid Bubble Particles
+      ctx.save();
+      for (let s = 0; s < 4; s++) {
+        const sx = -910 + s * 60;
+        for (let row = 0; row < 6; row++) {
+          const sy = 260 + row * 16;
+          const blink = Math.sin(time * 0.012 + s * 3 + row) > 0.1;
+          ctx.fillStyle = blink ? '#10B981' : '#00D2FF';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 1.8, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
       ctx.restore();
 
-      // DATA CORE: Server racks with blinking LEDs
-      const drawServerRack = (x: number, y: number, label: string) => {
-        ctx.fillStyle = '#111622';
-        ctx.fillRect(x - 25, y - 35, 50, 70);
-        ctx.strokeStyle = '#1E293B';
-        ctx.strokeRect(x - 25, y - 35, 50, 70);
-
-        // Server rack units
-        for (let u = 0; u < 5; u++) {
-          ctx.fillStyle = '#1A2234';
-          ctx.fillRect(x - 21, y - 30 + u * 12, 42, 9);
-
-          // Blinking status LEDs
-          const blink = Math.sin(time * 0.01 + u * 1.5) > 0;
-          ctx.fillStyle = blink ? '#10B981' : '#065F46';
-          ctx.beginPath();
-          ctx.arc(x - 15, y - 26 + u * 12, 1.8, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#00D2FF';
-          ctx.beginPath();
-          ctx.arc(x - 9, y - 26 + u * 12, 1.8, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        ctx.fillStyle = '#64748B';
-        ctx.font = '8px "JetBrains Mono", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(label, x, y + 46);
-      };
-
-      drawServerRack(-70, 530, 'AAYUSH-AI');
-      drawServerRack(70, 530, 'FULLSTACK-CORE');
-
-      // HQ: Command desk with laptop
+      // 4. OBSERVATION DECK: Viewport Cosmic Reflections
       ctx.save();
-      ctx.translate(440, -80);
-      // Desk
-      ctx.fillStyle = '#1E2430';
-      ctx.fillRect(-35, -18, 70, 36);
-      ctx.strokeStyle = '#334155';
-      ctx.strokeRect(-35, -18, 70, 36);
-      // Laptop base & glowing screen
-      ctx.fillStyle = '#0F172A';
-      ctx.fillRect(-12, -8, 24, 16);
-      ctx.fillStyle = '#00D2FF';
-      ctx.globalAlpha = 0.8;
-      ctx.fillRect(-10, -6, 20, 12);
-      ctx.globalAlpha = 1;
+      const obsPulse = (Math.sin(time * 0.003) + 1) * 0.5;
+      const obsGrad = ctx.createLinearGradient(0, 240, 0, 380);
+      obsGrad.addColorStop(0, `rgba(56, 189, 248, ${0.15 + obsPulse * 0.1})`);
+      obsGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = obsGrad;
+      ctx.fillRect(-220, 240, 440, 140);
       ctx.restore();
 
-      // F. Render All Interactable Objects
+      // 5. DOCK: Starship Engine Thruster Glow & Strobe
+      ctx.save();
+      const dockPulse = (Math.sin(time * 0.009) + 1) * 0.5;
+      const engineGrad = ctx.createRadialGradient(720, 420, 4, 720, 420, 35 + dockPulse * 15);
+      engineGrad.addColorStop(0, 'rgba(255, 230, 180, 0.9)');
+      engineGrad.addColorStop(0.4, 'rgba(249, 115, 22, 0.6)');
+      engineGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = engineGrad;
+      ctx.beginPath();
+      ctx.arc(720, 420, 50, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // --- D. RENDER INTERACTABLE OBJECTS ---
       INTERACTABLES.forEach(obj => {
         const isHovered = nearestObj?.id === obj.id;
         const px = obj.position.x;
         const py = obj.position.y;
 
         // Proximity target ring on floor
+        ctx.save();
         if (isHovered) {
-          ctx.save();
           ctx.strokeStyle = obj.color || '#00D2FF';
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([4, 4]);
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 4]);
           ctx.beginPath();
-          ctx.arc(px, py, 32 + Math.sin(time * 0.008) * 4, 0, Math.PI * 2);
+          ctx.arc(px, py, 36 + Math.sin(time * 0.008) * 4, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.restore();
+
+          // Expanding wave ring
+          const ringPulse = (time * 0.02) % 30;
+          ctx.strokeStyle = obj.color || '#00D2FF';
+          ctx.globalAlpha = Math.max(0, 1 - ringPulse / 30);
+          ctx.beginPath();
+          ctx.arc(px, py, 30 + ringPulse, 0, Math.PI * 2);
+          ctx.stroke();
         }
 
-        // Base pedestal
-        ctx.fillStyle = '#161D2A';
+        // Base tech pedestal on floor
+        ctx.fillStyle = isHovered ? 'rgba(0, 210, 255, 0.25)' : 'rgba(15, 23, 42, 0.7)';
         ctx.beginPath();
-        ctx.arc(px, py, 18, 0, Math.PI * 2);
+        ctx.ellipse(px, py, 22, 11, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = isHovered ? (obj.color || '#00D2FF') : '#252F42';
+        ctx.strokeStyle = isHovered ? (obj.color || '#00D2FF') : 'rgba(148, 163, 184, 0.3)';
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Object floating icon / holographic beacon
-        const beaconY = py - 18 + Math.sin(time * 0.004 + px * 0.01) * 3;
+        // Object floating beacon
+        const beaconY = py - 20 + Math.sin(time * 0.004 + px * 0.01) * 4;
         ctx.fillStyle = obj.color || '#00D2FF';
         ctx.beginPath();
-        ctx.arc(px, beaconY, 6, 0, Math.PI * 2);
+        ctx.arc(px, beaconY, 6.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Label above terminal
-        ctx.fillStyle = isHovered ? '#FFFFFF' : '#94A3B8';
-        ctx.font = '500 10px "Space Grotesk", sans-serif';
+        // Glowing outer beacon halo
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(px, beaconY, 9, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Terminal label
+        ctx.fillStyle = isHovered ? '#FFFFFF' : '#CBD5E1';
+        ctx.font = 'bold 10px "Space Grotesk", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(obj.name, px, py - 32);
+        ctx.fillText(obj.name, px, py - 35);
 
         // Interaction key prompt
         if (isHovered) {
+          ctx.fillStyle = 'rgba(16, 20, 28, 0.9)';
+          ctx.fillRect(px - 44, py - 60, 88, 18);
+          ctx.strokeStyle = '#00D2FF';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(px - 44, py - 60, 88, 18);
+
           ctx.fillStyle = '#00D2FF';
           ctx.font = 'bold 9px "JetBrains Mono", monospace';
-          ctx.fillText('[ E ] INTERACT', px, py - 46);
+          ctx.fillText('[ E ] INTERACT', px, py - 47);
         }
+        ctx.restore();
       });
 
-      // G. Click destination indicator
+      // --- E. CLICK DESTINATION INDICATOR ---
       if (targetDestRef.current) {
         ctx.save();
         ctx.strokeStyle = '#00D2FF';
@@ -507,86 +851,87 @@ export const WorkshopWorld: React.FC<Props> = ({
         ctx.restore();
       }
 
-      // H. Render Player Character
-      // Soft shadow
+      // --- F. RENDER AMONG US CREWMATE CHARACTER ---
       ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      const pX = player.x;
+      const pY = player.y;
+
+      // Soft shadow on floor
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.beginPath();
-      ctx.ellipse(player.x, player.y + 14, 16, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(pX, pY + 12, 18, 8, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Cyan ground lighting reflection
-      ctx.fillStyle = 'rgba(0, 210, 255, 0.12)';
+      // Floor lighting reflection matching current zone
+      const curZoneConfig = ROOM_CONFIGS[detectedZone] || ROOM_CONFIGS.AI_LAB;
+      ctx.fillStyle = curZoneConfig.glowColor;
       ctx.beginPath();
-      ctx.ellipse(player.x, player.y + 14, 22, 10, 0, 0, Math.PI * 2);
+      ctx.ellipse(pX, pY + 12, 26, 12, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Player torso (Dark tech jacket)
-      const walkBob = player.isMoving ? Math.sin(player.animTick) * 2 : 0;
-      const legSwing = player.isMoving ? Math.sin(player.animTick) * 5 : 0;
+      // Crewmate sprite walk bob & wobble
+      const walkWobble = player.isMoving ? Math.sin(player.animTick * 1.1) * 0.08 : 0;
+      const walkBounce = player.isMoving ? Math.abs(Math.sin(player.animTick * 1.1)) * 3.5 : 0;
 
-      // Legs / boots
-      ctx.fillStyle = '#1A202C';
-      // Left leg
-      ctx.fillRect(player.x - 7, player.y + 4 + (player.isMoving ? legSwing : 0), 5, 10);
-      // Right leg
-      ctx.fillRect(player.x + 2, player.y + 4 - (player.isMoving ? legSwing : 0), 5, 10);
+      ctx.translate(pX, pY - walkBounce);
+      ctx.rotate(walkWobble);
 
-      // Body (Sleek tech jacket with cyan zipper line)
-      ctx.fillStyle = '#111827';
-      ctx.fillRect(player.x - 10, player.y - 14 + walkBob, 20, 20);
-
-      // Backpack / satchel
-      if (player.facing === 'up' || player.facing === 'left' || player.facing === 'right') {
-        ctx.fillStyle = '#1F2937';
-        ctx.fillRect(player.x - 7, player.y - 12 + walkBob, 14, 14);
+      // Facing direction: flip horizontally when facing left
+      if (player.facing === 'left') {
+        ctx.scale(-1, 1);
       }
 
-      // Neon cyan accent seams on jacket
-      ctx.fillStyle = '#00D2FF';
-      ctx.fillRect(player.x - 1, player.y - 12 + walkBob, 2, 16);
+      // Retrieve crewmate sprite from cache
+      const spritePath = `/among_us_map/sprites/crewmate_${crewmateColor}.png`;
+      const crewmateSprite = images.get(spritePath) || images.get('/among_us_map/sprites/crewmate_cyan.png');
 
-      // Developer Head
-      ctx.fillStyle = '#374151';
-      ctx.beginPath();
-      ctx.arc(player.x, player.y - 22 + walkBob, 9, 0, Math.PI * 2);
-      ctx.fill();
+      const charW = 44;
+      const charH = 56;
 
-      // Stylized visor / cyber hair
-      ctx.fillStyle = '#111827';
-      ctx.beginPath();
-      ctx.arc(player.x, player.y - 24 + walkBob, 9.5, Math.PI, Math.PI * 2);
-      ctx.fill();
-
-      // Visor eye glint depending on facing direction
-      ctx.fillStyle = '#00D2FF';
-      if (player.facing === 'down') {
-        ctx.fillRect(player.x - 4, player.y - 22 + walkBob, 8, 2.5);
-      } else if (player.facing === 'left') {
-        ctx.fillRect(player.x - 7, player.y - 22 + walkBob, 4, 2.5);
-      } else if (player.facing === 'right') {
-        ctx.fillRect(player.x + 3, player.y - 22 + walkBob, 4, 2.5);
+      if (crewmateSprite && crewmateSprite.complete && crewmateSprite.naturalWidth > 0) {
+        // Draw high-resolution transparent Among Us crewmate
+        ctx.drawImage(crewmateSprite, -charW / 2, -charH + 10, charW, charH);
+      } else {
+        // Fallback procedural crewmate if sprite loading
+        ctx.fillStyle = '#00D2FF';
+        ctx.beginPath();
+        ctx.ellipse(0, -22, 14, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#E2E8F0';
+        ctx.beginPath();
+        ctx.ellipse(6, -24, 7, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
       }
 
+      // Draw Equipped Hat
+      if (crewmateHat && crewmateHat !== 'none') {
+        const hatPath = `/among_us_map/hats/hat_${crewmateHat}.png`;
+        const hatSprite = images.get(hatPath);
+        if (hatSprite && hatSprite.complete && hatSprite.naturalWidth > 0) {
+          const hatW = 34;
+          const hatH = 34;
+          ctx.drawImage(hatSprite, -hatW / 2 + 2, -charH - 12, hatW, hatH);
+        }
+      }
       ctx.restore();
 
-      // I. Render Companion Drone ("WORKSHOP AI")
+      // --- G. RENDER COMPANION DRONE ("WORKSHOP AI") ---
       ctx.save();
       const dX = drone.x;
       const dY = drone.y + drone.hoverOffset;
 
       // Drone shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.beginPath();
-      ctx.ellipse(dX, player.y + 12, 10, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(dX, player.y + 10, 10, 4, 0, 0, Math.PI * 2);
       ctx.fill();
 
       // Drone body
       ctx.fillStyle = '#0F172A';
       ctx.strokeStyle = '#00D2FF';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.arc(dX, dY, 8, 0, Math.PI * 2);
+      ctx.arc(dX, dY, 8.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
@@ -607,8 +952,33 @@ export const WorkshopWorld: React.FC<Props> = ({
       ctx.fillStyle = '#38BDF8';
       ctx.font = 'bold 8px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('WORKSHOP AI', dX, dY - 12);
+      ctx.fillText('WORKSHOP AI', dX, dY - 13);
       ctx.restore();
+
+      // --- H. OVERVIEW MODE CARDS (When user zooms out to view full station collage) ---
+      if (isOverviewMode) {
+        Object.values(ROOM_CONFIGS).forEach(r => {
+          ctx.save();
+          const cardX = r.centerX;
+          const cardY = r.centerY + r.height / 2 + 35;
+
+          ctx.fillStyle = 'rgba(11, 15, 23, 0.95)';
+          ctx.fillRect(cardX - 110, cardY - 20, 220, 42);
+          ctx.strokeStyle = r.themeColor;
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(cardX - 110, cardY - 20, 220, 42);
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = 'bold 11px "Space Grotesk", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`WARP TO ${r.title}`, cardX, cardY - 2);
+
+          ctx.fillStyle = r.themeColor;
+          ctx.font = '9px "JetBrains Mono", monospace';
+          ctx.fillText('CLICK TO ENTER SECTOR', cardX, cardY + 12);
+          ctx.restore();
+        });
+      }
 
       ctx.restore(); // Restore camera translation
 
@@ -621,9 +991,9 @@ export const WorkshopWorld: React.FC<Props> = ({
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [currentZone, nearestObj, onZoneChange]);
+  }, [currentZone, nearestObj, onZoneChange, isOverviewMode, crewmateColor, crewmateHat]);
 
-  // Click on canvas to move player / interact
+  // Click on canvas to move player / interact / select sector in overview mode
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -633,17 +1003,35 @@ export const WorkshopWorld: React.FC<Props> = ({
 
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const camX = width / 2 - playerRef.current.x;
-    const camY = height / 2 - playerRef.current.y;
+    const zoom = cameraRef.current.zoom;
+    const camX = width / 2 - cameraRef.current.x * zoom;
+    const camY = height / 2 - cameraRef.current.y * zoom;
 
     // Convert screen coordinates to world coordinates
-    const clickWorldX = clickScreenX - camX;
-    const clickWorldY = clickScreenY - camY;
+    const clickWorldX = (clickScreenX - camX) / zoom;
+    const clickWorldY = (clickScreenY - camY) / zoom;
+
+    // If in overview mode, clicking a room teleports into it and exits overview mode
+    if (isOverviewMode) {
+      for (const r of Object.values(ROOM_CONFIGS)) {
+        if (
+          Math.abs(clickWorldX - r.centerX) < r.width / 2 &&
+          Math.abs(clickWorldY - r.centerY) < r.height / 2 + 50
+        ) {
+          sounds.playZoneTransition();
+          playerRef.current.x = r.centerX;
+          playerRef.current.y = r.centerY + 50;
+          onZoneChange(r.id);
+          if (onToggleOverview) onToggleOverview();
+          return;
+        }
+      }
+    }
 
     // Check if clicked directly on an interactable
     for (const obj of INTERACTABLES) {
       const d = Math.hypot(obj.position.x - clickWorldX, obj.position.y - clickWorldY);
-      if (d <= 35) {
+      if (d <= 45) {
         sounds.playClick();
         onInteract(obj);
         return;

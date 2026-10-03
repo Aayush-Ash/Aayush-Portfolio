@@ -37,6 +37,13 @@ export const App: React.FC = () => {
   // Teleportation target
   const [teleportTarget, setTeleportTarget] = useState<Vector2D | null>(null);
 
+  // Full Station Overview Mode
+  const [isOverviewMode, setIsOverviewMode] = useState(false);
+
+  // Crewmate customizer state
+  const [crewmateColor, setCrewmateColor] = useState('cyan');
+  const [crewmateHat, setCrewmateHat] = useState('crown');
+
   // Nearest interactable tracked by HUD
   const [nearestObj, setNearestObj] = useState<InteractableObject | null>(null);
 
@@ -53,6 +60,7 @@ export const App: React.FC = () => {
     if (targetZone) {
       setTeleportTarget({ x: targetZone.center.x, y: targetZone.center.y });
       setCurrentZone(zoneId);
+      setIsOverviewMode(false);
     }
   }, []);
 
@@ -66,6 +74,12 @@ export const App: React.FC = () => {
 
   // Handle interaction from either world proximity or HUD click
   const handleInteract = useCallback((obj: InteractableObject) => {
+    if (obj.id === 'term_dock_launch') {
+      sounds.playZoneTransition();
+      setScreen('executive');
+      return;
+    }
+
     switch (obj.type) {
       case 'project':
         if (obj.projectId) {
@@ -100,7 +114,6 @@ export const App: React.FC = () => {
 
   // Mobile virtual dpad movement
   const handleMobileMove = (dir: 'up' | 'down' | 'left' | 'right') => {
-    // Simulated move via keyboard dispatch or coordinates
     const step = 45;
     setTeleportTarget(prev => {
       const currentPos = prev || { x: 0, y: 0 };
@@ -124,6 +137,7 @@ export const App: React.FC = () => {
         setShowContact(false);
         setShowCompanion(false);
         setActiveEasterEgg(null);
+        setIsOverviewMode(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -152,6 +166,10 @@ export const App: React.FC = () => {
             onOpenCompanion={() => setShowCompanion(true)}
             teleportTarget={teleportTarget}
             onTeleportComplete={() => setTeleportTarget(null)}
+            isOverviewMode={isOverviewMode}
+            onToggleOverview={() => setIsOverviewMode(prev => !prev)}
+            crewmateColor={crewmateColor}
+            crewmateHat={crewmateHat}
           />
 
           <WorldHUD
@@ -165,6 +183,12 @@ export const App: React.FC = () => {
             onTeleportToZone={handleTeleportToZone}
             isMuted={isMuted}
             onToggleSound={toggleSound}
+            isOverviewMode={isOverviewMode}
+            onToggleOverview={() => setIsOverviewMode(prev => !prev)}
+            crewmateColor={crewmateColor}
+            onChangeCrewmateColor={setCrewmateColor}
+            crewmateHat={crewmateHat}
+            onChangeCrewmateHat={setCrewmateHat}
           />
 
           {/* Mobile on-screen controls for touch devices */}
