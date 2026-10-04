@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { sounds } from '../audio/soundEffects';
-import { Keyboard, Zap, Volume2, RotateCcw, Trophy, CheckCircle2 } from 'lucide-react';
+import { Keyboard, Volume2, RotateCcw, CheckCircle2 } from 'lucide-react';
 
 export const SakuraKeysDemo: React.FC = () => {
   const samplePhrase = "agentic artificial intelligence requires systems that plan, act, reflect, and self-correct with precision.";

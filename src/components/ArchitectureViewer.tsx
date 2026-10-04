@@ -24,6 +24,7 @@ export const ArchitectureViewer: React.FC<Props> = ({ nodes, systemTitle }) => {
         <div className="arch-header-badge">
           <Layers size={14} className="text-cyan" />
           <span>INTERACTIVE DAG ARCHITECTURE PIPELINE</span>
+          {systemTitle && <span className="arch-system-tag font-mono text-cyan">// {systemTitle}</span>}
         </div>
         <p className="arch-hint">Click individual pipeline nodes below to inspect internal execution logic, tools, and data contracts.</p>
       </div>

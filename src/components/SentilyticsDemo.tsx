@@ -41,6 +41,9 @@ export const SentilyticsDemo: React.FC = () => {
   const confidence = Math.min(99, Math.max(78, 85 + Math.abs(totalScore) * 3));
 
   const handleRunAnalysis = (textToAnalyze = inputText) => {
+    if (textToAnalyze !== inputText) {
+      setInputText(textToAnalyze);
+    }
     sounds.playTerminalBoot();
     setAnalyzing(true);
     setPipelineStep(0);

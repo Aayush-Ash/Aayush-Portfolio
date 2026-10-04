@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { ChatMessage } from '../types/chat';
 import { QUICK_PROMPTS, queryWorkshopAI } from '../data/knowledgeBase';
 import { sounds } from '../audio/soundEffects';
-import { Bot, Send, Sparkles, X, Minimize2, Radio, Terminal } from 'lucide-react';
+import { Bot, Send, Sparkles, X, Terminal } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -46,6 +46,7 @@ How can I assist your tour of the lab today?`,
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const msgCounterRef = useRef(1);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -63,11 +64,14 @@ How can I assist your tour of the lab today?`,
     if (!textToSend.trim()) return;
 
     sounds.playClick();
+    msgCounterRef.current += 1;
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const userMsg: ChatMessage = {
-      id: 'usr_' + Date.now(),
+      id: `usr_${msgCounterRef.current}_${now.getTime()}`,
       sender: 'user',
       text: textToSend,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: timeStr
     };
 
     setMessages(prev => [...prev, userMsg]);
@@ -121,6 +125,8 @@ How can I assist your tour of the lab today?`,
         className="modal-panel companion-modal-panel"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
+        aria-labelledby="drone-companion-title"
       >
         {/* Companion Header */}
         <div className="modal-header companion-header">
@@ -131,7 +137,7 @@ How can I assist your tour of the lab today?`,
             </div>
             <div>
               <div className="flex-row items-center gap-2">
-                <h2 className="modal-title font-mono text-cyan">WORKSHOP AI // COMPANION</h2>
+                <h2 id="drone-companion-title" className="modal-title font-mono text-cyan">WORKSHOP AI // COMPANION</h2>
                 <span className="drone-status-tag">● ONLINE</span>
               </div>
               <span className="text-xs text-muted font-mono">PORTFOLIO KNOWLEDGE RETRIEVER v2.4</span>
@@ -144,6 +150,7 @@ How can I assist your tour of the lab today?`,
               className="modal-close-btn"
               onClick={onClose}
               title="Close Drone Interface"
+              aria-label="Close Drone Interface"
             >
               <X size={18} />
             </button>
@@ -233,6 +240,7 @@ How can I assist your tour of the lab today?`,
               disabled={!inputValue.trim() || isTyping}
               className="companion-send-btn"
               title="Send Query"
+              aria-label="Send Query"
             >
               <Send size={15} />
             </button>

@@ -105,7 +105,7 @@ export const PROJECTS: ProjectData[] = [
     ],
     links: {
       liveDemo: '#',
-      github: 'https://github.com'
+      github: 'https://github.com/Aayush-Ash'
     },
     demoType: 'agent_runner'
   },
@@ -195,7 +195,7 @@ export const PROJECTS: ProjectData[] = [
     ],
     links: {
       liveDemo: '#',
-      github: 'https://github.com'
+      github: 'https://github.com/Aayush-Ash'
     },
     demoType: 'keyboard'
   },
@@ -293,7 +293,7 @@ export const PROJECTS: ProjectData[] = [
     ],
     links: {
       liveDemo: '#',
-      github: 'https://github.com'
+      github: 'https://github.com/Aayush-Ash'
     },
     demoType: 'pipeline'
   },
@@ -363,7 +363,7 @@ export const PROJECTS: ProjectData[] = [
     ],
     links: {
       liveDemo: '#',
-      github: 'https://github.com'
+      github: 'https://github.com/Aayush-Ash'
     }
   },
   {
@@ -433,7 +433,7 @@ export const PROJECTS: ProjectData[] = [
     ],
     links: {
       liveDemo: '#',
-      github: 'https://github.com'
+      github: 'https://github.com/Aayush-Ash'
     }
   },
   {
@@ -503,7 +503,7 @@ export const PROJECTS: ProjectData[] = [
     ],
     links: {
       liveDemo: '#',
-      github: 'https://github.com'
+      github: 'https://github.com/Aayush-Ash'
     }
   }
 ];

@@ -55,13 +55,15 @@ ${edu.details.map(d => `- ${d}`).join('\n')}
         className="modal-panel resume-modal-panel"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
+        aria-labelledby="resume-modal-title"
       >
         <div className="modal-header">
           <div className="flex-row items-center gap-3">
             <FileText size={20} className="text-cyan" />
             <div>
               <span className="modal-kicker font-mono text-cyan">SECTOR 04 // HOLO-PEDESTAL</span>
-              <h2 className="modal-title font-mono">{RESUME_DATA.name} // CURRICULUM VITAE</h2>
+              <h2 id="resume-modal-title" className="modal-title font-mono">{RESUME_DATA.name} // CURRICULUM VITAE</h2>
             </div>
           </div>
 
@@ -84,7 +86,14 @@ ${edu.details.map(d => `- ${d}`).join('\n')}
               <Printer size={14} />
               <span>PRINT / PDF</span>
             </button>
-            <button type="button" className="modal-close-btn" onClick={onClose}>×</button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={onClose}
+              aria-label="Close Resume"
+            >
+              ×
+            </button>
           </div>
         </div>
 
@@ -96,9 +105,9 @@ ${edu.details.map(d => `- ${d}`).join('\n')}
             <div className="resume-contacts font-mono text-xs text-muted">
               <span>{RESUME_DATA.email}</span>
               <span>•</span>
-              <a href={RESUME_DATA.github} target="_blank" rel="noreferrer" className="text-cyan">GitHub</a>
+              <a href={RESUME_DATA.github} target="_blank" rel="noopener noreferrer" className="text-cyan">GitHub</a>
               <span>•</span>
-              <a href={RESUME_DATA.linkedin} target="_blank" rel="noreferrer" className="text-cyan">LinkedIn</a>
+              <a href={RESUME_DATA.linkedin} target="_blank" rel="noopener noreferrer" className="text-cyan">LinkedIn</a>
               <span>•</span>
               <span>{RESUME_DATA.location}</span>
             </div>

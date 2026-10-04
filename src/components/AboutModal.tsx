@@ -16,16 +16,25 @@ export const AboutModal: React.FC<Props> = ({ onClose, onOpenResume, onOpenConta
         className="modal-panel about-modal-panel"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
+        aria-labelledby="about-modal-title"
       >
         <div className="modal-header">
           <div className="flex-row items-center gap-3">
             <div className="header-status-indicator" />
             <div>
               <span className="modal-kicker font-mono text-cyan">SECTOR 04 // COMMAND WORKSTATION</span>
-              <h2 className="modal-title font-mono">DEVELOPER PROFILE // AAYUSH KUMAR</h2>
+              <h2 id="about-modal-title" className="modal-title font-mono">DEVELOPER PROFILE // AAYUSH KUMAR</h2>
             </div>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose}>×</button>
+          <button
+            type="button"
+            className="modal-close-btn"
+            onClick={onClose}
+            aria-label="Close Profile"
+          >
+            ×
+          </button>
         </div>
 
         <div className="modal-body">
@@ -33,8 +42,8 @@ export const AboutModal: React.FC<Props> = ({ onClose, onOpenResume, onOpenConta
           <div className="about-hero-grid">
             <div className="about-avatar-card">
               <div className="avatar-frame">
-                <div className="avatar-icon-ring">
-                  <Cpu size={36} className="text-cyan animate-pulse" />
+                <div className="avatar-icon-ring" role="img" aria-label="Aayush Kumar Agentic AI Developer Core Reactor Avatar">
+                  <Cpu size={36} className="text-cyan animate-pulse" aria-hidden="true" />
                 </div>
                 <div className="avatar-tag font-mono">AGENTIC DEVELOPER</div>
               </div>

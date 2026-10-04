@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { Vector2D, InteractableObject, ZoneId } from '../types/world';
-import { ZONES, INTERACTABLES } from '../data/worldMap';
+import { INTERACTABLES } from '../data/worldMap';
 import { sounds } from '../audio/soundEffects';
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
   onToggleOverview?: () => void;
   crewmateColor?: string;
   crewmateHat?: string;
+  onNearestChange?: (obj: InteractableObject | null) => void;
 }
 
 // Room visual specifications
@@ -136,7 +137,8 @@ export const WorkshopWorld: React.FC<Props> = ({
   isOverviewMode = false,
   onToggleOverview,
   crewmateColor = 'cyan',
-  crewmateHat = 'none'
+  crewmateHat = 'none',
+  onNearestChange
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -182,7 +184,7 @@ export const WorkshopWorld: React.FC<Props> = ({
 
   // Asset image cache
   const imagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [, setAssetsLoaded] = useState(false);
 
   // Sakura petals particle system
   const sakuraPetalsRef = useRef<SakuraPetal[]>([]);
@@ -521,6 +523,9 @@ export const WorkshopWorld: React.FC<Props> = ({
         }
         nearestObjRef.current = closest;
         setNearestObj(closest);
+        if (onNearestChange) {
+          onNearestChange(closest);
+        }
       }
 
       // Smooth camera interpolation

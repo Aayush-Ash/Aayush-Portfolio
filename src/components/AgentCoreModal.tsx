@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { sounds } from '../audio/soundEffects';
-import { Cpu, X, ArrowDown, Sparkles, Terminal, CheckCircle2, Database, Wrench, Brain, Layers } from 'lucide-react';
+import { Cpu, X, ArrowDown, Terminal, CheckCircle2, Database, Wrench, Brain } from 'lucide-react';
 
 interface Props {
   onClose: () => void;
@@ -88,16 +88,25 @@ else:
         className="modal-panel agent-core-panel"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
+        aria-labelledby="agent-core-title"
       >
         <div className="modal-header">
           <div className="flex-row items-center gap-3">
             <Cpu size={20} className="text-cyan animate-pulse" />
             <div>
               <span className="modal-kicker font-mono text-cyan">SECTOR 01 // HOLOGRAPHIC LAB</span>
-              <h2 className="modal-title font-mono">AGENT CORE ARCHITECTURE SPECIFICATION</h2>
+              <h2 id="agent-core-title" className="modal-title font-mono">AGENT CORE ARCHITECTURE SPECIFICATION</h2>
             </div>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose}>×</button>
+          <button
+            type="button"
+            className="modal-close-btn"
+            onClick={onClose}
+            aria-label="Close Agent Core Modal"
+          >
+            ×
+          </button>
         </div>
 
         <div className="modal-body">

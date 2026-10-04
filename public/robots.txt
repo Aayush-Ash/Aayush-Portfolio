@@ -1,0 +1,7 @@
+# Robots.txt for Aayush Kumar Portfolio & Autonomous Digital Workshop
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Host & Sitemap
+Sitemap: https://aayush-portfolio.vercel.app/sitemap.xml

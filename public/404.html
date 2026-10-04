@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 // SIGNAL LOST — Aayush Kumar Digital Workshop</title>
+    <meta name="description" content="Coordinates out of range. The requested sector does not exist or has drifted out of telemetry contact." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg-base: #080A0F;
+        --accent-cyan: #00D2FF;
+        --accent-amber: #F59E0B;
+        --accent-red: #EF4444;
+        --text-muted: #94A3B8;
+        --border-subtle: #1C2433;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background-color: var(--bg-base);
+        color: #F1F5F9;
+        font-family: 'JetBrains Mono', monospace;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+      /* Scanlines & Vignette */
+      .scanlines {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%);
+        background-size: 100% 4px;
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .vignette {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at center, transparent 40%, rgba(8, 10, 15, 0.95) 90%);
+        pointer-events: none;
+      }
+      .grid-lines {
+        position: absolute;
+        inset: 0;
+        background-image: 
+          linear-gradient(to right, rgba(28, 36, 51, 0.3) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(28, 36, 51, 0.3) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+      }
+      .card-404 {
+        position: relative;
+        z-index: 10;
+        max-width: 580px;
+        width: 100%;
+        background: rgba(16, 20, 28, 0.85);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 2.5rem 2rem;
+        text-align: center;
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+      }
+      .radar-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem auto;
+        position: relative;
+      }
+      .radar-circle {
+        position: absolute;
+        inset: 0;
+        border: 2px dashed rgba(0, 210, 255, 0.4);
+        border-radius: 50%;
+        animation: spin 12s linear infinite;
+      }
+      .radar-ping {
+        position: absolute;
+        inset: 16px;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.15);
+        border: 2px solid var(--accent-red);
+        animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
+      .radar-core {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--accent-red);
+        box-shadow: 0 0 12px var(--accent-red);
+      }
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+      @keyframes ping {
+        75%, 100% {
+          transform: scale(1.8);
+          opacity: 0;
+        }
+      }
+      .code-badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        color: var(--accent-amber);
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        letter-spacing: 1.5px;
+        margin-bottom: 1rem;
+      }
+      h1 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #FFFFFF;
+        letter-spacing: 1px;
+        margin-bottom: 0.75rem;
+      }
+      p {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        line-height: 1.6;
+        margin-bottom: 1.75rem;
+      }
+      .diag-box {
+        background: #080A0F;
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        font-size: 0.75rem;
+        text-align: left;
+        margin-bottom: 2rem;
+        color: #64748B;
+      }
+      .diag-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.3rem;
+      }
+      .diag-row:last-child { margin-bottom: 0; }
+      .diag-val.warn { color: var(--accent-amber); }
+      .diag-val.err { color: var(--accent-red); }
+      .actions-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: center;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background: var(--accent-cyan);
+        color: #080A0F;
+        border: 1px solid var(--accent-cyan);
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+      }
+      .btn-primary:hover {
+        background: #38BDF8;
+        box-shadow: 0 0 25px rgba(0, 210, 255, 0.5);
+        transform: translateY(-1px);
+      }
+      .btn-secondary {
+        background: #131A26;
+        color: #F1F5F9;
+        border: 1px solid var(--border-subtle);
+      }
+      .btn-secondary:hover {
+        border-color: var(--accent-cyan);
+        color: var(--accent-cyan);
+        transform: translateY(-1px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid-lines"></div>
+    <div class="vignette"></div>
+    <div class="scanlines"></div>
+
+    <main class="card-404">
+      <div class="radar-icon" aria-hidden="true">
+        <div class="radar-circle"></div>
+        <div class="radar-ping"></div>
+        <div class="radar-core"></div>
+      </div>
+
+      <span class="code-badge">ERROR CODE 404 // SECTOR UNREACHABLE</span>
+      <h1>SIGNAL LOST IN SPACE</h1>
+      <p>
+        The station coordinates or protocol you attempted to access do not exist in the navigation registry. The telemetry link has timed out.
+      </p>
+
+      <div class="diag-box" aria-label="Diagnostic telemetry">
+        <div class="diag-row">
+          <span>TARGET COORDINATES:</span>
+          <span class="diag-val err" id="target-path">UNKNOWN / OUT_OF_BOUNDS</span>
+        </div>
+        <div class="diag-row">
+          <span>STATION COMM STATUS:</span>
+          <span class="diag-val warn">CARRIER DETECT LOST</span>
+        </div>
+        <div class="diag-row">
+          <span>RESCUE BEACON:</span>
+          <span class="diag-val">ACTIVE // BROADCASTING ON 1420 MHz</span>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <a href="/" class="btn btn-primary">
+          <span>RETURN TO WORKSHOP</span>
+          <span>→</span>
+        </a>
+        <a href="/#executive" class="btn btn-secondary">
+          <span>EXECUTIVE DOSSIER</span>
+        </a>
+      </div>
+    </main>
+
+    <script>
+      try {
+        const pathEl = document.getElementById('target-path');
+        if (pathEl) {
+          pathEl.textContent = window.location.pathname + window.location.search + window.location.hash || '/404';
+        }
+      } catch (e) {}
+    </script>
+  </body>
+</html>
