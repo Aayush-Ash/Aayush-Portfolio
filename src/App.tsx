@@ -28,7 +28,7 @@ import './App.css';
 type ScreenState = 'opening' | 'workshop' | 'executive' | '404';
 
 export const App: React.FC = () => {
-  const [screen, setScreen] = useState<ScreenState>('opening');
+  const [screen, setScreen] = useState<ScreenState>('executive');
   const [isMuted, setIsMuted] = useState(false);
   const [currentZone, setCurrentZone] = useState<ZoneId>('CENTRAL_HUB');
 
@@ -37,6 +37,7 @@ export const App: React.FC = () => {
   const [showAgentCore, setShowAgentCore] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showResume, setShowResume] = useState(false);
+  const [resumeSection, setResumeSection] = useState<'skills' | 'experience' | 'overview'>('overview');
   const [showContact, setShowContact] = useState(false);
   const [contactSubject, setContactSubject] = useState<string | undefined>(undefined);
   const [showCompanion, setShowCompanion] = useState(false);
@@ -62,6 +63,9 @@ export const App: React.FC = () => {
   // Nearest interactable tracked by HUD
   const [nearestObj, setNearestObj] = useState<InteractableObject | null>(null);
 
+  // Mobile virtual dpad continuous movement state
+  const [mobileMoveDir, setMobileMoveDir] = useState<'up' | 'down' | 'left' | 'right' | null>(null);
+
   // Initialize analytics on mount
   useEffect(() => {
     initGoogleAnalytics();
@@ -74,6 +78,9 @@ export const App: React.FC = () => {
       if (hash === '#executive') {
         setScreen('executive');
         trackPageView('#executive', 'Executive Dossier');
+      } else if (hash === '#opening') {
+        setScreen('opening');
+        trackPageView('#opening', 'Digital Workshop Gateway');
       } else if (hash === '#workshop') {
         setScreen('workshop');
         trackPageView('#workshop', '2.5D Digital Workshop');
@@ -178,27 +185,22 @@ export const App: React.FC = () => {
         }
         break;
       case 'terminal':
+        setIsOverviewMode(true);
+        sounds.playClick();
+        break;
       case 'companion':
-        setShowCompanion(true);
-        trackModalOpen('companion_drone');
         break;
       default:
         break;
     }
   }, [handleOpenProjectById]);
 
-  // Mobile virtual dpad movement
+  // Mobile virtual dpad movement step fallback
   const handleMobileMove = (dir: 'up' | 'down' | 'left' | 'right') => {
-    const step = 45;
-    setTeleportTarget(prev => {
-      const currentPos = prev || { x: 0, y: 0 };
-      switch (dir) {
-        case 'up': return { x: currentPos.x, y: currentPos.y - step };
-        case 'down': return { x: currentPos.x, y: currentPos.y + step };
-        case 'left': return { x: currentPos.x - step, y: currentPos.y };
-        case 'right': return { x: currentPos.x + step, y: currentPos.y };
-      }
-    });
+    setMobileMoveDir(dir);
+    setTimeout(() => {
+      setMobileMoveDir(null);
+    }, 220);
   };
 
   // Keyboard shortcut to close any open modal on ESC
@@ -274,10 +276,6 @@ export const App: React.FC = () => {
               trackZoneTeleport(z);
             }}
             onInteract={handleInteract}
-            onOpenCompanion={() => {
-              setShowCompanion(true);
-              trackModalOpen('companion_drone');
-            }}
             teleportTarget={teleportTarget}
             onTeleportComplete={() => setTeleportTarget(null)}
             isOverviewMode={isOverviewMode}
@@ -285,6 +283,7 @@ export const App: React.FC = () => {
             crewmateColor={crewmateColor}
             crewmateHat={crewmateHat}
             onNearestChange={setNearestObj}
+            mobileMoveDirection={mobileMoveDir}
           />
 
           <WorldHUD
@@ -292,10 +291,6 @@ export const App: React.FC = () => {
             nearestObj={nearestObj}
             onInteract={() => {
               if (nearestObj) handleInteract(nearestObj);
-            }}
-            onOpenCompanion={() => {
-              setShowCompanion(true);
-              trackModalOpen('companion_drone');
             }}
             onSwitchToExecutive={() => {
               setScreen('executive');
@@ -323,11 +318,13 @@ export const App: React.FC = () => {
 
           {/* Mobile on-screen controls for touch devices */}
           <MobileControls
-            onMove={handleMobileMove}
+            onMoveStart={(dir) => setMobileMoveDir(dir)}
+            onMoveEnd={() => setMobileMoveDir(null)}
             onInteract={() => {
               if (nearestObj) handleInteract(nearestObj);
             }}
             hasInteractable={Boolean(nearestObj)}
+            nearestObjName={nearestObj?.name}
           />
         </>
       )}
@@ -340,11 +337,18 @@ export const App: React.FC = () => {
             trackPageView('#workshop', '2.5D Digital Workshop');
           }}
           onOpenProject={handleOpenProjectById}
-          onOpenResume={() => {
+          onOpenResume={(section = 'overview') => {
+            setResumeSection(section);
             setShowResume(true);
             trackModalOpen('resume_modal');
           }}
           onOpenContact={() => handleOpenContactWithSubject()}
+          onOpenAbout={() => {
+            setShowAbout(true);
+            trackModalOpen('about_modal');
+          }}
+          isMuted={isMuted}
+          onToggleSound={toggleSound}
           onOpenPrivacyPolicy={() => {
             setShowPrivacy(true);
             trackModalOpen('privacy_policy');
@@ -458,6 +462,7 @@ export const App: React.FC = () => {
             setShowResume(false);
             handleOpenContactWithSubject();
           }}
+          initialSection={resumeSection}
         />
       )}
 

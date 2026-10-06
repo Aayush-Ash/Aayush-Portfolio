@@ -5,7 +5,6 @@ import { sounds } from '../audio/soundEffects';
 
 interface Props {
   onInteract: (obj: InteractableObject) => void;
-  onOpenCompanion: () => void;
   currentZone: ZoneId;
   onZoneChange: (zone: ZoneId) => void;
   teleportTarget: Vector2D | null;
@@ -15,6 +14,7 @@ interface Props {
   crewmateColor?: string;
   crewmateHat?: string;
   onNearestChange?: (obj: InteractableObject | null) => void;
+  mobileMoveDirection?: 'up' | 'down' | 'left' | 'right' | null;
 }
 
 // Room visual specifications
@@ -129,7 +129,6 @@ interface SpaceStar {
 
 export const WorkshopWorld: React.FC<Props> = ({
   onInteract,
-  onOpenCompanion,
   currentZone,
   onZoneChange,
   teleportTarget,
@@ -138,7 +137,8 @@ export const WorkshopWorld: React.FC<Props> = ({
   onToggleOverview,
   crewmateColor = 'cyan',
   crewmateHat = 'none',
-  onNearestChange
+  onNearestChange,
+  mobileMoveDirection = null
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -152,13 +152,6 @@ export const WorkshopWorld: React.FC<Props> = ({
     facing: 'right' as 'left' | 'right',
     isMoving: false,
     animTick: 0
-  });
-
-  // Companion drone position (trailing behind crewmate)
-  const droneRef = useRef({
-    x: -35,
-    y: -35,
-    hoverOffset: 0
   });
 
   // Smooth camera position
@@ -305,8 +298,6 @@ export const WorkshopWorld: React.FC<Props> = ({
       playerRef.current.vx = 0;
       playerRef.current.vy = 0;
       targetDestRef.current = null;
-      droneRef.current.x = teleportTarget.x - 35;
-      droneRef.current.y = teleportTarget.y - 35;
       cameraRef.current.x = teleportTarget.x;
       cameraRef.current.y = teleportTarget.y;
       sounds.playZoneTransition();
@@ -332,15 +323,9 @@ export const WorkshopWorld: React.FC<Props> = ({
 
       keysRef.current[e.key.toLowerCase()] = true;
 
-      if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') {
+      if (e.key === 'e' || e.key === 'E' || e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         triggerInteraction();
-      }
-
-      if (e.key === ' ' || e.code === 'Space') {
-        e.preventDefault();
-        sounds.playClick();
-        onOpenCompanion();
       }
 
       if (e.key === 'm' || e.key === 'M') {
@@ -362,7 +347,7 @@ export const WorkshopWorld: React.FC<Props> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [triggerInteraction, onOpenCompanion, onToggleOverview]);
+  }, [triggerInteraction, onToggleOverview]);
 
   // Canvas render & animation loop
   useEffect(() => {
@@ -398,10 +383,10 @@ export const WorkshopWorld: React.FC<Props> = ({
       let dx = 0;
       let dy = 0;
 
-      if (keys['w'] || keys['arrowup']) dy -= 1;
-      if (keys['s'] || keys['arrowdown']) dy += 1;
-      if (keys['a'] || keys['arrowleft']) dx -= 1;
-      if (keys['d'] || keys['arrowright']) dx += 1;
+      if (keys['w'] || keys['arrowup'] || mobileMoveDirection === 'up') dy -= 1;
+      if (keys['s'] || keys['arrowdown'] || mobileMoveDirection === 'down') dy += 1;
+      if (keys['a'] || keys['arrowleft'] || mobileMoveDirection === 'left') dx -= 1;
+      if (keys['d'] || keys['arrowright'] || mobileMoveDirection === 'right') dx += 1;
 
       // Click/tap to move destination
       if (targetDestRef.current && (dx === 0 && dy === 0)) {
@@ -416,8 +401,12 @@ export const WorkshopWorld: React.FC<Props> = ({
         }
       }
 
-      // If keyboard keys pressed, cancel click-to-move destination
-      if (keys['w'] || keys['s'] || keys['a'] || keys['d'] || keys['arrowup'] || keys['arrowdown'] || keys['arrowleft'] || keys['arrowright']) {
+      // If keyboard keys or mobile dpad active, cancel click-to-move destination
+      if (
+        keys['w'] || keys['s'] || keys['a'] || keys['d'] ||
+        keys['arrowup'] || keys['arrowdown'] || keys['arrowleft'] || keys['arrowright'] ||
+        mobileMoveDirection
+      ) {
         targetDestRef.current = null;
       }
 
@@ -478,14 +467,6 @@ export const WorkshopWorld: React.FC<Props> = ({
         player.x = Math.max(-1120, Math.min(1120, nextX));
         player.y = Math.max(-680, Math.min(680, nextY));
       }
-
-      // Drone follower lag
-      const drone = droneRef.current;
-      const targetDroneX = player.x + (player.facing === 'left' ? 42 : -42);
-      const targetDroneY = player.y - 36 + Math.sin(time * 0.005) * 5;
-      drone.x += (targetDroneX - drone.x) * 0.09;
-      drone.y += (targetDroneY - drone.y) * 0.09;
-      drone.hoverOffset = Math.sin(time * 0.006) * 4;
 
       // Detect current zone
       let detectedZone: ZoneId = 'CENTRAL_HUB';
@@ -920,46 +901,6 @@ export const WorkshopWorld: React.FC<Props> = ({
       }
       ctx.restore();
 
-      // --- G. RENDER COMPANION DRONE ("WORKSHOP AI") ---
-      ctx.save();
-      const dX = drone.x;
-      const dY = drone.y + drone.hoverOffset;
-
-      // Drone shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.beginPath();
-      ctx.ellipse(dX, player.y + 10, 10, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Drone body
-      ctx.fillStyle = '#0F172A';
-      ctx.strokeStyle = '#00D2FF';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.arc(dX, dY, 8.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Glowing drone optic eye
-      ctx.fillStyle = '#00D2FF';
-      ctx.beginPath();
-      ctx.arc(dX, dY, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Small antenna / hover rings
-      ctx.strokeStyle = '#38BDF8';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(dX, dY + 6, 5, 0, Math.PI);
-      ctx.stroke();
-
-      // Companion label
-      ctx.fillStyle = '#38BDF8';
-      ctx.font = 'bold 8px "JetBrains Mono", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('WORKSHOP AI', dX, dY - 13);
-      ctx.restore();
-
       // --- H. OVERVIEW MODE CARDS (When user zooms out to view full station collage) ---
       if (isOverviewMode) {
         Object.values(ROOM_CONFIGS).forEach(r => {
@@ -1048,12 +989,62 @@ export const WorkshopWorld: React.FC<Props> = ({
     targetDestRef.current = { x: clickWorldX, y: clickWorldY };
   };
 
+  const handleCanvasTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const clickScreenX = touch.clientX - rect.left;
+      const clickScreenY = touch.clientY - rect.top;
+
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const zoom = cameraRef.current.zoom;
+      const camX = width / 2 - cameraRef.current.x * zoom;
+      const camY = height / 2 - cameraRef.current.y * zoom;
+
+      const clickWorldX = (clickScreenX - camX) / zoom;
+      const clickWorldY = (clickScreenY - camY) / zoom;
+
+      if (isOverviewMode) {
+        for (const r of Object.values(ROOM_CONFIGS)) {
+          if (
+            Math.abs(clickWorldX - r.centerX) < r.width / 2 &&
+            Math.abs(clickWorldY - r.centerY) < r.height / 2 + 50
+          ) {
+            sounds.playZoneTransition();
+            playerRef.current.x = r.centerX;
+            playerRef.current.y = r.centerY + 50;
+            onZoneChange(r.id);
+            if (onToggleOverview) onToggleOverview();
+            return;
+          }
+        }
+      }
+
+      for (const obj of INTERACTABLES) {
+        const d = Math.hypot(obj.position.x - clickWorldX, obj.position.y - clickWorldY);
+        if (d <= 55) {
+          sounds.playClick();
+          onInteract(obj);
+          return;
+        }
+      }
+
+      sounds.playClick();
+      targetDestRef.current = { x: clickWorldX, y: clickWorldY };
+    }
+  };
+
   return (
     <div className="workshop-world-container">
       <canvas
         ref={canvasRef}
         className="workshop-canvas"
         onClick={handleCanvasClick}
+        onTouchStart={handleCanvasTouch}
+        style={{ touchAction: 'none' }}
       />
     </div>
   );

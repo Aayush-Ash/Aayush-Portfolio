@@ -3,7 +3,6 @@ import type { ZoneId, InteractableObject } from '../types/world';
 import { ZONES } from '../data/worldMap';
 import { sounds } from '../audio/soundEffects';
 import {
-  Bot,
   Compass,
   Volume2,
   VolumeX,
@@ -23,7 +22,6 @@ interface Props {
   currentZone: ZoneId;
   nearestObj: InteractableObject | null;
   onInteract: () => void;
-  onOpenCompanion: () => void;
   onSwitchToExecutive: () => void;
   onTeleportToZone: (zoneId: ZoneId) => void;
   isMuted: boolean;
@@ -68,7 +66,6 @@ export const WorldHUD: React.FC<Props> = ({
   currentZone,
   nearestObj,
   onInteract,
-  onOpenCompanion,
   onSwitchToExecutive,
   onTeleportToZone,
   isMuted,
@@ -84,7 +81,9 @@ export const WorldHUD: React.FC<Props> = ({
   onOpenContact
 }) => {
   const [showWardrobe, setShowWardrobe] = useState(false);
-  const [minimapCollapsed, setMinimapCollapsed] = useState(false);
+  const [minimapCollapsed, setMinimapCollapsed] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= 768 : false
+  );
   const currentZoneConfig = ZONES[currentZone] || ZONES.CENTRAL_HUB;
 
   const handleZoneClick = (zoneId: ZoneId) => {
@@ -293,20 +292,6 @@ export const WorldHUD: React.FC<Props> = ({
           <span className="font-mono text-xs">SUIT</span>
         </button>
 
-        {/* Companion Drone */}
-        <button
-          type="button"
-          className="hud-action-btn companion-btn"
-          onClick={() => {
-            sounds.playClick();
-            onOpenCompanion();
-          }}
-          title="Open Workshop AI Companion"
-        >
-          <Bot size={15} className="text-cyan animate-bounce-subtle" />
-          <span className="font-mono text-xs">AI DRONE</span>
-        </button>
-
         {/* Executive View */}
         <button
           type="button"
@@ -318,7 +303,7 @@ export const WorldHUD: React.FC<Props> = ({
           title="Switch to conventional executive portfolio view"
         >
           <Zap size={14} className="text-amber-400" />
-          <span className="font-mono text-xs">EXECUTIVE</span>
+          <span className="font-mono text-xs exec-text">EXECUTIVE</span>
         </button>
 
         {/* Sound toggle */}

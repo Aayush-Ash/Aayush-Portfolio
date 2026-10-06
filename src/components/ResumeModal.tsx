@@ -6,10 +6,25 @@ import { FileText, Download, Printer, Copy, Check, Briefcase, GraduationCap, Cpu
 interface Props {
   onClose: () => void;
   onOpenContact: () => void;
+  initialSection?: 'skills' | 'experience' | 'overview';
 }
 
-export const ResumeModal: React.FC<Props> = ({ onClose, onOpenContact }) => {
+export const ResumeModal: React.FC<Props> = ({ onClose, onOpenContact, initialSection }) => {
   const [copied, setCopied] = useState(false);
+
+  React.useEffect(() => {
+    if (initialSection === 'skills') {
+      setTimeout(() => {
+        const el = document.getElementById('resume-skills');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } else if (initialSection === 'experience') {
+      setTimeout(() => {
+        const el = document.getElementById('resume-experience');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [initialSection]);
 
   const handlePrint = () => {
     sounds.playClick();
@@ -123,7 +138,7 @@ ${edu.details.map(d => `- ${d}`).join('\n')}
           </div>
 
           {/* Technical Skills Breakdown */}
-          <div className="resume-section">
+          <div className="resume-section" id="resume-skills">
             <h3 className="resume-section-title font-mono">
               <Layers size={14} className="text-cyan inline-icon" />
               <span>TECHNICAL COMPETENCIES MATRIX</span>
@@ -150,7 +165,7 @@ ${edu.details.map(d => `- ${d}`).join('\n')}
           </div>
 
           {/* Experience */}
-          <div className="resume-section">
+          <div className="resume-section" id="resume-experience">
             <h3 className="resume-section-title font-mono">
               <Briefcase size={14} className="text-cyan inline-icon" />
               <span>ENGINEERING EXPERIENCE &amp; PROJECTS</span>
