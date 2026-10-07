@@ -13,9 +13,11 @@ export const BrandLogo: React.FC<Props> = ({ className = '', size = 32 }) => {
     >
       <img
         src="/brand-logo-hires.png"
-        alt="Aayush Kumar Logo"
+        alt="Aayush Kumar — Agentic AI Developer &amp; Full-Stack Systems Architect Logo"
         width={size}
         height={size}
+        loading="eager"
+        decoding="async"
         className="brand-logo-img"
         style={{
           width: '100%',

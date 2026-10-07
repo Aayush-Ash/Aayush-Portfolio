@@ -274,6 +274,82 @@
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 20px rgba(251, 188, 5, 0.35);
 }
 
+/* Clear Primary CTAs Banner */
+.google-hero-cta-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.hero-primary-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.15rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(12px);
+}
+
+.btn-cta-work {
+  background: rgba(0, 210, 255, 0.12);
+  border: 1px solid rgba(0, 210, 255, 0.5);
+  color: #FFFFFF;
+  box-shadow: 0 0 15px rgba(0, 210, 255, 0.15);
+}
+.btn-cta-work:hover {
+  background: rgba(0, 210, 255, 0.28);
+  border-color: #00D2FF;
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(0, 210, 255, 0.4);
+}
+
+.btn-cta-resume {
+  background: rgba(30, 41, 59, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #F1F5F9;
+}
+.btn-cta-resume:hover {
+  background: rgba(51, 65, 85, 0.95);
+  border-color: #00D2FF;
+  color: #00D2FF;
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.25);
+}
+
+.btn-cta-contact {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #F1F5F9;
+}
+.btn-cta-contact:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10B981;
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 0 22px rgba(16, 185, 129, 0.35);
+}
+
+.btn-cta-workshop {
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  color: #F1F5F9;
+}
+.btn-cta-workshop:hover {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: #C084FC;
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 0 22px rgba(168, 85, 247, 0.35);
+}
+
 /* Quick Search Suggestion Chips */
 .google-quick-chips {
   display: flex;

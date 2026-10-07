@@ -80,12 +80,57 @@
           "publisher": {
             "@id": "https://aayush-portfolio.vercel.app/#person"
           }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://aayush-portfolio.vercel.app/#faq-schema",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What distinguishes an Agentic AI Developer from a traditional AI/ML engineer or prompt wrapper?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Standard AI wrappers simply send single prompt-response calls to an LLM. As an Agentic AI Developer, I engineer autonomous multi-step cognitive loops decomposing intent into structured Directed Acyclic Graphs (DAGs), live tool routing, and self-reflection loops for hallucination-free outputs."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do you guarantee accuracy and eliminate hallucinations in production agent pipelines?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Triple-layer verification architecture: (1) Deterministic JSON schema enforcement via Pydantic/Zod; (2) Grounded citation tracking matching claims to raw source token spans; (3) Independent Verifier Agents that cross-examine findings before delivery."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Are you available for full-time employment, contract engagements, or consulting?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes! Actively evaluating full-time software engineering roles, high-impact contract projects, and specialized AI advisory consulting. Remote-first across US, European, and APAC time zones."
+              }
+            }
+          ]
         }
       ]
     }
     </script>
   </head>
   <body>
+    <noscript>
+      <div style="background:#080A0F; color:#F1F5F9; padding:2rem; font-family:monospace; text-align:center; min-height:100vh;">
+        <h1 style="color:#00D2FF; margin-bottom:1rem;">AAYUSH KUMAR — AGENTIC AI ARCHITECT</h1>
+        <p style="margin-bottom:1.5rem; max-width:600px; margin-left:auto; margin-right:auto;">
+          This interactive digital workshop requires JavaScript to render 2.5D graphics and interactive telemetry. Please enable JavaScript or contact Aayush directly:
+        </p>
+        <p style="margin-bottom:1rem;">
+          <a href="mailto:kashyapaayush3331@gmail.com" style="color:#00D2FF; font-weight:bold;">kashyapaayush3331@gmail.com</a>
+        </p>
+        <p style="font-size:0.875rem;">
+          <a href="/privacy.html" style="color:#94A3B8; margin-right:1rem;">Privacy Policy</a>
+          <a href="/terms.html" style="color:#94A3B8;">Terms of Service</a>
+        </p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

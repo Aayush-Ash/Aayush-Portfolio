@@ -81,17 +81,42 @@ export function initGoogleAnalytics(): void {
   }
 }
 
+// Injects Cloudflare Web Analytics beacon if token exists
+export function initCloudflareAnalytics(): void {
+  const cfToken = (import.meta as any).env?.VITE_CF_BEACON_TOKEN || '';
+  if (!cfToken || document.getElementById('cf-beacon-script')) {
+    return;
+  }
+
+  try {
+    const script = document.createElement('script');
+    script.id = 'cf-beacon-script';
+    script.defer = true;
+    script.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+    script.setAttribute('data-cf-beacon', JSON.stringify({ token: cfToken }));
+    document.head.appendChild(script);
+    console.debug('[Telemetry] Cloudflare Web Analytics beacon initialized');
+  } catch (err) {
+    console.debug('Cloudflare Analytics init failed:', err);
+  }
+}
+
 // Track Screen & View transitions with dynamic Title and Canonical update
 export function trackPageView(pagePath: string, pageTitle?: string): void {
   const fullTitle = pageTitle ? `${pageTitle} — Aayush Kumar` : BASE_TITLE;
   document.title = fullTitle;
 
-  // Update canonical tag
+  // Determine active base origin for Cloudflare or production domain
+  const activeBase = typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
+    ? `${window.location.origin}/`
+    : BASE_CANONICAL;
+
+  // Update canonical tag dynamically
   try {
     const canonicalEl = document.getElementById('canonical-url') as HTMLLinkElement | null;
     if (canonicalEl) {
       const cleanHash = pagePath.startsWith('#') ? pagePath : `#${pagePath}`;
-      canonicalEl.href = pagePath === '/' || !pagePath ? BASE_CANONICAL : `${BASE_CANONICAL}${cleanHash}`;
+      canonicalEl.href = pagePath === '/' || !pagePath ? activeBase : `${activeBase}${cleanHash}`;
     }
   } catch {}
 

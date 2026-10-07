@@ -28,6 +28,7 @@ export const ContactModal: React.FC<Props> = ({ onClose, prefillSubject }) => {
     email: '',
     message: prefillSubject ? `Hello Aayush, I would like to discuss ${prefillSubject}.\n\n` : ''
   });
+  const [honeypot, setHoneypot] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isTransmitting, setIsTransmitting] = useState(false);
@@ -38,6 +39,11 @@ export const ContactModal: React.FC<Props> = ({ onClose, prefillSubject }) => {
 
   // Validate form fields
   const validateForm = () => {
+    // If bot filled the honeypot, silently reject
+    if (honeypot) {
+      return false;
+    }
+
     const errs: Record<string, string> = {};
     if (!formData.name.trim() || formData.name.trim().length < 2) {
       errs.name = 'Please provide an identifier or name (min 2 characters).';
@@ -70,6 +76,19 @@ export const ContactModal: React.FC<Props> = ({ onClose, prefillSubject }) => {
     sounds.playTerminalBoot();
     setIsTransmitting(true);
     setTransmitProgress(15);
+
+    const endpoint = (import.meta as any).env?.VITE_CONTACT_FORM_ENDPOINT;
+    if (endpoint) {
+      try {
+        fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(formData)
+        }).catch((err) => console.warn('Endpoint submission fallback to direct receipt:', err));
+      } catch (err) {
+        console.warn('Form dispatch exception:', err);
+      }
+    }
 
     // Simulate encrypted satellite uplink progress
     const t1 = setTimeout(() => setTransmitProgress(48), 350);
@@ -180,6 +199,18 @@ export const ContactModal: React.FC<Props> = ({ onClose, prefillSubject }) => {
             <div className="contact-grid-split">
               {/* Form Side */}
               <form onSubmit={handleSubmit} className="contact-form-col" noValidate>
+                {/* Honeypot field for bot spam deterrence */}
+                <input
+                  type="text"
+                  name="_honey_trap"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  style={{ display: 'none', position: 'absolute', left: '-9999px' }}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                />
+
                 <div className="form-group">
                   <label htmlFor="contact-name" className="form-label font-mono">
                     YOUR IDENTIFIER / NAME <span className="text-cyan">*</span>
@@ -231,9 +262,14 @@ export const ContactModal: React.FC<Props> = ({ onClose, prefillSubject }) => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="contact-message" className="form-label font-mono">
-                    TRANSMISSION PAYLOAD / MESSAGE <span className="text-cyan">*</span>
-                  </label>
+                  <div className="flex-row items-center justify-between mb-1">
+                    <label htmlFor="contact-message" className="form-label font-mono" style={{ margin: 0 }}>
+                      TRANSMISSION PAYLOAD / MESSAGE <span className="text-cyan">*</span>
+                    </label>
+                    <span className="font-mono text-xs text-muted" style={{ opacity: 0.7 }}>
+                      {formData.message.length} chars
+                    </span>
+                  </div>
                   <textarea
                     id="contact-message"
                     rows={4}

@@ -21,8 +21,8 @@ import type { ProjectData } from './types/project';
 import { PROJECTS } from './data/projects';
 import { ZONES, EASTER_EGGS } from './data/worldMap';
 import { sounds } from './audio/soundEffects';
-import { trackPageView, trackZoneTeleport, trackModalOpen, initGoogleAnalytics } from './utils/analytics';
-import { AlertTriangle, Compass, Zap } from 'lucide-react';
+import { trackPageView, trackZoneTeleport, trackModalOpen, initGoogleAnalytics, initCloudflareAnalytics } from './utils/analytics';
+import { Compass, Zap } from 'lucide-react';
 import './App.css';
 
 type ScreenState = 'opening' | 'workshop' | 'executive' | '404';
@@ -69,6 +69,7 @@ export const App: React.FC = () => {
   // Initialize analytics on mount
   useEffect(() => {
     initGoogleAnalytics();
+    initCloudflareAnalytics();
   }, []);
 
   // Hash-based routing and deep linking
@@ -194,14 +195,6 @@ export const App: React.FC = () => {
         break;
     }
   }, [handleOpenProjectById]);
-
-  // Mobile virtual dpad movement step fallback
-  const handleMobileMove = (dir: 'up' | 'down' | 'left' | 'right') => {
-    setMobileMoveDir(dir);
-    setTimeout(() => {
-      setMobileMoveDir(null);
-    }, 220);
-  };
 
   // Keyboard shortcut to close any open modal on ESC
   useEffect(() => {

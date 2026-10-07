@@ -19,9 +19,6 @@ import {
   Compass, 
   FileText, 
   Mail, 
-  ExternalLink, 
-  Cpu, 
-  Layers, 
   Shuffle,
   ChevronRight
 } from 'lucide-react';
@@ -33,13 +30,15 @@ interface Props {
   onOpenResume: () => void;
   onOpenContact: () => void;
   onSwitchToWorkshop: () => void;
+  onOpenWork?: () => void;
 }
 
 export const GoogleSearchHero: React.FC<Props> = ({
   onOpenProject,
   onOpenResume,
   onOpenContact,
-  onSwitchToWorkshop
+  onSwitchToWorkshop,
+  onOpenWork
 }) => {
   const [query, setQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
@@ -209,7 +208,8 @@ export const GoogleSearchHero: React.FC<Props> = ({
         playsInline
         muted
         loop
-        preload="auto"
+        preload="metadata"
+        aria-hidden="true"
       />
 
       {/* Ambient Vignette & Deep Backdrop Glow for Contrast */}
@@ -304,6 +304,64 @@ export const GoogleSearchHero: React.FC<Props> = ({
             >
               <Shuffle size={13} className="text-amber-400" />
               <span>I&apos;m Feeling Lucky</span>
+            </button>
+          </div>
+        )}
+
+        {/* Clear Primary CTAs for Immediate Recruiter / Client Conversion */}
+        {!hasSearched && (
+          <div className="google-hero-cta-banner" role="navigation" aria-label="Quick Actions">
+            <button
+              type="button"
+              className="hero-primary-cta btn-cta-work font-mono"
+              onClick={() => {
+                sounds.playClick();
+                if (onOpenWork) onOpenWork();
+                else handleExecuteSearch('Flagship Projects');
+              }}
+              aria-label="Explore featured engineering projects"
+            >
+              <Sparkles size={14} className="text-cyan animate-pulse" />
+              <span>EXPLORE WORK</span>
+            </button>
+
+            <button
+              type="button"
+              className="hero-primary-cta btn-cta-resume font-mono"
+              onClick={() => {
+                sounds.playClick();
+                onOpenResume();
+              }}
+              aria-label="View developer curriculum vitae"
+            >
+              <FileText size={14} className="text-cyan" />
+              <span>VIEW RESUME</span>
+            </button>
+
+            <button
+              type="button"
+              className="hero-primary-cta btn-cta-contact font-mono"
+              onClick={() => {
+                sounds.playClick();
+                onOpenContact();
+              }}
+              aria-label="Transmit direct message or discuss role"
+            >
+              <Mail size={14} className="text-emerald-400" />
+              <span>CONTACT &amp; HIRE</span>
+            </button>
+
+            <button
+              type="button"
+              className="hero-primary-cta btn-cta-workshop font-mono"
+              onClick={() => {
+                sounds.playZoneTransition();
+                onSwitchToWorkshop();
+              }}
+              aria-label="Enter interactive 2.5D space station workshop"
+            >
+              <Compass size={14} className="text-purple-400 animate-spin-slow" />
+              <span>2.5D WORKSHOP</span>
             </button>
           </div>
         )}

@@ -1042,10 +1042,14 @@ export const WorkshopWorld: React.FC<Props> = ({
       <canvas
         ref={canvasRef}
         className="workshop-canvas"
+        role="img"
+        aria-label="Interactive 2.5D engineering lab space station viewport — Navigate with WASD or touch D-pad to inspect Agent Core, Build Bay, and Comms Uplink"
         onClick={handleCanvasClick}
         onTouchStart={handleCanvasTouch}
         style={{ touchAction: 'none' }}
-      />
+      >
+        Interactive 2.5D space station digital workshop navigation viewport. Switch to Executive View in the HUD if you prefer a standard portfolio format.
+      </canvas>
     </div>
   );
 };

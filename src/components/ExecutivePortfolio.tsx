@@ -78,8 +78,10 @@ export const ExecutivePortfolio: React.FC<Props> = ({
             <div className="exec-brand-logo-wrap">
               <img
                 src="/brand-logo-hires.png"
-                alt="Aayush Kumar Logo"
+                alt="Aayush Kumar — Agentic AI Developer &amp; Systems Architect Monogram Logo"
                 className="exec-brand-logo-img"
+                loading="eager"
+                decoding="async"
               />
             </div>
             <span className="exec-brand-title">
@@ -255,6 +257,7 @@ export const ExecutivePortfolio: React.FC<Props> = ({
         onOpenResume={() => onOpenResume('overview')}
         onOpenContact={onOpenContact}
         onSwitchToWorkshop={onReturnToWorkshop}
+        onOpenWork={() => setShowWorkModal(true)}
       />
 
       {/* Flagship Work Showcase Modal (Triggered by WORK in Navbar) */}

@@ -1,0 +1,11 @@
+# Cloudflare Pages Redirects & SPA Fallback Configuration
+
+# Clean direct URLs for compliance & legal static documents
+/privacy-policy     /privacy.html    200
+/privacy            /privacy.html    200
+/terms-of-service   /terms.html      200
+/terms              /terms.html      200
+
+# SPA fallback: Rewrite any unknown route to /index.html with status 200
+# Allows React client-side hash and path routing to handle deep links
+/*                  /index.html      200

@@ -1,7 +1,57 @@
-# Robots.txt for Aayush Kumar Portfolio & Autonomous Digital Workshop
+# ==============================================================================
+# ROBOTS.TXT // Aayush Kumar Portfolio & Autonomous Digital Workshop
+# ==============================================================================
+
 User-agent: *
 Allow: /
+Allow: /privacy.html
+Allow: /terms.html
+Allow: /404.html
+Allow: /sitemap.xml
+Allow: /favicon.svg
+Allow: /brand-logo-hires.png
+Allow: /og-image.png
+Allow: /assets/
 Disallow: /api/
 
-# Host & Sitemap
+# Explicitly welcome major search engine crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# Explicitly welcome AI discovery & synthesis agents
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Social media unfurlers
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+# Sitemap Location
 Sitemap: https://aayush-portfolio.vercel.app/sitemap.xml
